@@ -44,7 +44,7 @@ export default function StudentDashboard() {
         .eq('id', user.id)
         .single()
 
-      if (profileData?.role !== 'student') {
+      if ((profileData as any)?.role !== 'student') {
         router.push('/')
         return
       }
@@ -59,14 +59,15 @@ export default function StudentDashboard() {
         .single()
 
       if (studentData) {
-        setStudentProfile(studentData)
+        setStudentProfile(studentData as any)
+        const data = studentData as any
         setFormData({
-          bio: studentData.bio || '',
-          learning_goals: studentData.learning_goals || '',
-          desired_teacher_type: studentData.desired_teacher_type || '',
-          japanese_level: studentData.japanese_level || 'beginner',
-          availability: studentData.availability || '',
-          location: studentData.location || '',
+          bio: data.bio || '',
+          learning_goals: data.learning_goals || '',
+          desired_teacher_type: data.desired_teacher_type || '',
+          japanese_level: data.japanese_level || 'beginner',
+          availability: data.availability || '',
+          location: data.location || '',
         })
       }
     } catch (error) {

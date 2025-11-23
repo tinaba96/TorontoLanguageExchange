@@ -1,5 +1,4 @@
 import { createBrowserClient } from '@supabase/ssr'
-import { Database } from '@/lib/types/database.types'
 
 export const createClient = () => {
   // 環境変数を直接参照（Next.jsのビルド時に置換される）
@@ -20,5 +19,5 @@ export const createClient = () => {
     )
   }
 
-  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+  return createBrowserClient(supabaseUrl, supabaseAnonKey)
 }

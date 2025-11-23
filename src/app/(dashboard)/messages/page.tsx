@@ -88,7 +88,7 @@ export default function MessagesPage() {
 
       if (matchesData) {
         // データを MatchWithProfiles 型に変換
-        const formattedMatches: MatchWithProfiles[] = matchesData.map(match => ({
+        const formattedMatches: MatchWithProfiles[] = matchesData.map((match: any) => ({
           ...match,
           teacher: Array.isArray(match.teacher) ? match.teacher[0] : match.teacher,
           student: {
@@ -124,7 +124,7 @@ export default function MessagesPage() {
         .order('created_at', { ascending: true })
 
       if (data) {
-        const formattedMessages: MessageWithSender[] = data.map(msg => ({
+        const formattedMessages: MessageWithSender[] = data.map((msg: any) => ({
           ...msg,
           sender: Array.isArray(msg.sender) ? msg.sender[0] : msg.sender
         }))
@@ -147,7 +147,7 @@ export default function MessagesPage() {
           match_id: selectedMatch.id,
           sender_id: profile.id,
           content: newMessage.trim(),
-        })
+        } as any)
 
       if (error) throw error
 

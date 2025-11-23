@@ -39,7 +39,7 @@ export default function TeacherDashboard() {
         .eq("id", user.id)
         .single();
 
-      if (profileData?.role !== "teacher") {
+      if ((profileData as any)?.role !== "teacher") {
         router.push("/");
         return;
       }
