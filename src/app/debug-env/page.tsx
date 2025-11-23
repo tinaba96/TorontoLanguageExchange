@@ -10,14 +10,14 @@ export default function DebugEnvPage() {
       <div className="bg-white p-6 rounded shadow">
         <div className="mb-4">
           <strong>NEXT_PUBLIC_SUPABASE_URL:</strong>
-          <pre className="mt-2 p-2 bg-gray-100 rounded">
-            {url ? `✓ Set (${url.substring(0, 30)}...)` : '✗ Not set'}
+          <pre className="mt-2 p-2 bg-gray-100 rounded break-all">
+            {url || '✗ Not set'}
           </pre>
         </div>
         <div className="mb-4">
           <strong>NEXT_PUBLIC_SUPABASE_ANON_KEY:</strong>
-          <pre className="mt-2 p-2 bg-gray-100 rounded">
-            {key ? `✓ Set (${key.substring(0, 30)}...)` : '✗ Not set'}
+          <pre className="mt-2 p-2 bg-gray-100 rounded break-all">
+            {key ? `✓ Set: ${key}` : '✗ Not set'}
           </pre>
         </div>
         <div className="mb-4">
