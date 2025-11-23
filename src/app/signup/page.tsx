@@ -21,10 +21,18 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
+      // デバッグ: Supabaseクライアントの確認
+      console.log('Supabase client created:', !!supabase)
+      console.log('Email:', email)
+      console.log('Password length:', password.length)
+
       // ユーザー登録
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       })
 
       if (authError) {
