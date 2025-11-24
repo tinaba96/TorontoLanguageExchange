@@ -73,10 +73,11 @@ export default function SignUpPage() {
         throw new Error('ユーザー作成に失敗しました')
       }
 
-      console.log('=== CODE VERSION: 2024-11-24-v2 ===')
+      console.log('=== CODE VERSION: 2024-11-24-v3 - TRIGGER ONLY ===')
       console.log('User created:', authData.user.id)
       console.log('Profile will be created automatically by database trigger')
       console.log('=== NO CLIENT-SIDE PROFILE CREATION ===')
+      console.log('Timestamp:', new Date().toISOString())
 
       // メール確認が必要な場合
       if (authData.user && !authData.session) {
