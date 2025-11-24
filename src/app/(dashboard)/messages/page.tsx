@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, MatchWithProfiles, MessageWithSender } from '@/lib/types/database.types'
 
@@ -193,7 +194,13 @@ export default function MessagesPage() {
             >
               ダッシュボード
             </button>
-            <span className="text-gray-700">{profile?.full_name}</span>
+            <Link
+              href="/board"
+              className="text-indigo-600 hover:text-indigo-700"
+            >
+              掲示板
+            </Link>
+            <span className="text-gray-700 font-medium">{profile?.full_name}</span>
             <button
               onClick={handleLogout}
               className="text-gray-600 hover:text-gray-900"

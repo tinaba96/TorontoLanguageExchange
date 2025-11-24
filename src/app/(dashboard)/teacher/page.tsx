@@ -147,6 +147,12 @@ export default function TeacherDashboard() {
           <h1 className="text-2xl font-bold text-indigo-600">先生ダッシュボード</h1>
           <div className="flex items-center gap-4">
             <Link
+              href="/board"
+              className="text-indigo-600 hover:text-indigo-700 transition-colors"
+            >
+              掲示板
+            </Link>
+            <Link
               href="/messages"
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >
