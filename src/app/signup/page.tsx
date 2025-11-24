@@ -25,11 +25,44 @@ export default function SignUpPage() {
       console.log('Supabase client created:', !!supabase)
       console.log('Email:', email)
       console.log('Password length:', password.length)
+      console.log('Selected role:', role)
 
       // ユーザー登録
+      // Vercelの自動環境変数を優先的に使用
+      const getRedirectUrl = () => {
+        // 1. 明示的に設定されたSITE_URLを使用
+        if (process.env.NEXT_PUBLIC_SITE_URL) {
+          return `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+        }
+
+        // 2. Vercelの自動提供URL（https://付き）
+        if (process.env.NEXT_PUBLIC_VERCEL_URL) {
+          return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/auth/callback`
+        }
+
+        // 3. フォールバック：現在のオリジン（開発環境）
+        return `${window.location.origin}/auth/callback`
+      }
+
+      const redirectUrl = getRedirectUrl()
+
+      console.log('=== Signup Debug ===')
+      console.log('NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
+      console.log('NEXT_PUBLIC_VERCEL_URL:', process.env.NEXT_PUBLIC_VERCEL_URL)
+      console.log('window.location.origin:', window.location.origin)
+      console.log('Final Redirect URL:', redirectUrl)
+      console.log('==================')
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+            role: role,
+          },
+        },
       })
 
       if (authError) {
@@ -40,52 +73,21 @@ export default function SignUpPage() {
         throw new Error('ユーザー作成に失敗しました')
       }
 
+      console.log('=== CODE VERSION: 2024-11-24-v2 ===')
       console.log('User created:', authData.user.id)
+      console.log('Profile will be created automatically by database trigger')
+      console.log('=== NO CLIENT-SIDE PROFILE CREATION ===')
 
-      // 少し待ってからプロフィール作成（認証情報が反映されるまで）
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // プロフィール作成
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email,
-          full_name: fullName,
-          role,
-        })
-
-      if (profileError) {
-        console.error('Profile error:', profileError)
-        throw new Error(`プロフィール作成エラー: ${profileError.message}`)
+      // メール確認が必要な場合
+      if (authData.user && !authData.session) {
+        alert('登録完了！メールに送信された確認リンクをクリックしてください。')
+        router.push('/login')
+        return
       }
 
-      console.log('Profile created')
-
-      // ロール別のプロフィールテーブルにレコード作成
-      if (role === 'student') {
-        const { error: studentError } = await supabase
-          .from('student_profiles')
-          .insert({
-            user_id: authData.user.id,
-          })
-        if (studentError) {
-          console.error('Student profile error:', studentError)
-          throw new Error(`生徒プロフィール作成エラー: ${studentError.message}`)
-        }
-        console.log('Student profile created')
-      } else {
-        const { error: teacherError } = await supabase
-          .from('teacher_profiles')
-          .insert({
-            user_id: authData.user.id,
-          })
-        if (teacherError) {
-          console.error('Teacher profile error:', teacherError)
-          throw new Error(`先生プロフィール作成エラー: ${teacherError.message}`)
-        }
-        console.log('Teacher profile created')
-      }
+      // メール確認不要の場合（即座にログイン）
+      // 少し待ってからリダイレクト（トリガーが完了するまで）
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       // ロールに応じてリダイレクト
       if (role === 'teacher') {
