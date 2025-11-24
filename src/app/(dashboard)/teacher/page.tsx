@@ -53,7 +53,8 @@ export default function TeacherDashboard() {
 
       const matchedStudentIds = matchesData?.map((m) => m.student_id) || [];
 
-      const { data: studentsData } = await supabase
+      // クエリビルダー
+      let query = supabase
         .from("profiles")
         .select(
           `
@@ -61,8 +62,14 @@ export default function TeacherDashboard() {
           student_profile:student_profiles(*)
         `
         )
-        .eq("role", "student")
-        .not("id", "in", `(${matchedStudentIds.join(",") || "null"})`);
+        .eq("role", "student");
+
+      // マッチング済みの生徒がいる場合のみ除外条件を追加
+      if (matchedStudentIds.length > 0) {
+        query = query.not("id", "in", `(${matchedStudentIds.join(",")})`);
+      }
+
+      const { data: studentsData } = await query;
 
       if (studentsData) {
         // データを StudentWithProfile 型に変換
