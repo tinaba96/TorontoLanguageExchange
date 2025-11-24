@@ -53,6 +53,12 @@ export default function SignUpPage() {
       console.log('Final Redirect URL:', redirectUrl)
       console.log('==================')
 
+      console.log('📝 Signup data:', {
+        email,
+        full_name: fullName,
+        role: role,
+      })
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
