@@ -38,10 +38,13 @@ export default function MessagesPage() {
             filter: `match_id=eq.${selectedMatch.id}`,
           },
           (payload) => {
+            console.log('🔔 New message received:', payload)
             loadMessages(selectedMatch.id)
           }
         )
-        .subscribe()
+        .subscribe((status) => {
+          console.log('📡 Realtime subscription status:', status)
+        })
 
       return () => {
         supabase.removeChannel(channel)
