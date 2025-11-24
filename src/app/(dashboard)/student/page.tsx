@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, StudentProfile } from '@/lib/types/database.types'
 
@@ -118,10 +119,16 @@ export default function StudentDashboard() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-indigo-600">生徒ダッシュボード</h1>
           <div className="flex items-center gap-4">
-            <span className="text-gray-700">{profile?.full_name}</span>
+            <Link
+              href="/messages"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              メッセージ
+            </Link>
+            <span className="text-gray-700 font-medium">{profile?.full_name}</span>
             <button
               onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 transition-colors"
             >
               ログアウト
             </button>
