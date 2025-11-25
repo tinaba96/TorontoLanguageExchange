@@ -49,8 +49,8 @@ export default function TeacherDashboard() {
       const userVersion = profileData?.passphrase_version || 0;
       const currentVersion = parseInt(versionResult.data?.value || "1", 10);
 
-      // バージョンが古ければ再認証ページへ
-      if (userVersion < currentVersion) {
+      // adminユーザー以外でバージョンが古ければ再認証ページへ
+      if (!profileData?.is_admin && userVersion < currentVersion) {
         router.push("/verify-passphrase");
         return;
       }
