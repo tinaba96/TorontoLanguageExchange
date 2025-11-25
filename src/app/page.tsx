@@ -89,7 +89,7 @@ export default function Home() {
           Toronto Language Exchange
         </h1>
         <p className="text-xl text-gray-700 mb-12">
-          Connecting Japanese speakers with English speakers in Toronto
+          トロントで日本語を教えたい日本人と、日本語を学びたい英語話者をつなぐプラットフォーム
         </p>
 
         {user ? (
@@ -124,31 +124,40 @@ export default function Home() {
           </div>
         )}
 
-        <div className="mt-16 grid md:grid-cols-3 gap-8 text-left">
+        <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              For English Speakers
+              マッチング
             </h3>
             <p className="text-gray-600">
-              Find a Japanese language partner and practice in person in Toronto
+              日本人が教えたいEnglish Speakerを選んでマッチング
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              For Japanese Speakers
+              メッセージ
             </h3>
             <p className="text-gray-600">
-              Connect with English speakers and exchange languages together
+              マッチング後すぐにメッセージでやり取り開始
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Simple & Free
+              掲示板
             </h3>
             <p className="text-gray-600">
-              No hassle. Once matched, start messaging right away
+              ユーザー同士で情報交換や交流ができる掲示板
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              全体告知
+            </h3>
+            <p className="text-gray-600">
+              運営からのお知らせやイベント情報をチェック
             </p>
           </div>
         </div>
