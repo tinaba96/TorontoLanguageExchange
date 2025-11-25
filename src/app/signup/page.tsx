@@ -134,8 +134,8 @@ export default function SignUpPage() {
               onChange={(e) => setRole(e.target.value as 'teacher' | 'student')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
-              <option value="student">生徒として登録</option>
-              <option value="teacher">先生として登録</option>
+              <option value="student">English Speaker (日本語を学びたい)</option>
+              <option value="teacher">Japanese (英語を学びたい)</option>
             </select>
           </div>
 

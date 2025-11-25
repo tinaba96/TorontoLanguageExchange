@@ -71,7 +71,7 @@ export default function Home() {
             <div>
               <p className="font-semibold text-gray-900">{profile?.full_name || 'ユーザー'}</p>
               <p className="text-sm text-gray-500">
-                {profile?.role === 'teacher' ? '先生' : '生徒'}
+                {profile?.role === 'teacher' ? 'Japanese' : 'English Speaker'}
               </p>
             </div>
             <button
@@ -89,7 +89,7 @@ export default function Home() {
           Toronto Language Exchange
         </h1>
         <p className="text-xl text-gray-700 mb-12">
-          日本語の先生と生徒をつなぐプラットフォーム
+          Connecting Japanese speakers with English speakers in Toronto
         </p>
 
         {user ? (
@@ -127,28 +127,28 @@ export default function Home() {
         <div className="mt-16 grid md:grid-cols-3 gap-8 text-left">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              生徒向け
+              For English Speakers
             </h3>
             <p className="text-gray-600">
-              自分に合った日本語の先生を見つけて、対面でレッスンを受けられます
+              Find a Japanese language partner and practice in person in Toronto
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              先生向け
+              For Japanese Speakers
             </h3>
             <p className="text-gray-600">
-              教えたい生徒を選んで、直接メッセージでやり取りできます
+              Connect with English speakers and exchange languages together
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              シンプル
+              Simple & Free
             </h3>
             <p className="text-gray-600">
-              面倒な手続きなし。マッチングしたら、すぐにメッセージ開始
+              No hassle. Once matched, start messaging right away
             </p>
           </div>
         </div>
