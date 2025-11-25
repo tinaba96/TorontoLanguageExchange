@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
+import RichTextEditor from '@/components/RichTextEditor'
 
 interface Announcement {
   id: string
@@ -296,7 +297,10 @@ export default function AnnouncementsPage() {
 
                   {/* Content */}
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{announcement.title}</h3>
-                  <p className="text-gray-700 whitespace-pre-wrap">{announcement.content}</p>
+                  <div
+                    className="text-gray-700 prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: announcement.content }}
+                  />
 
                   {/* Actions (Admin only) */}
                   {profile?.is_admin && (
@@ -357,12 +361,9 @@ export default function AnnouncementsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   内容
                 </label>
-                <textarea
-                  value={newContent}
-                  onChange={(e) => setNewContent(e.target.value)}
-                  required
-                  rows={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                <RichTextEditor
+                  content={newContent}
+                  onChange={setNewContent}
                   placeholder="告知の内容を入力してください"
                 />
               </div>
