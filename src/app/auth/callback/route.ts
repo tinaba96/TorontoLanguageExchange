@@ -37,12 +37,8 @@ export async function GET(request: NextRequest) {
 
       if (profile) {
         console.log('Profile found with role:', profile.role)
-        // ロールに応じてリダイレクト
-        if (profile.role === 'teacher') {
-          return NextResponse.redirect(`${origin}/teacher`)
-        } else if (profile.role === 'student') {
-          return NextResponse.redirect(`${origin}/student`)
-        }
+        // ログイン後は全体告知ページへリダイレクト
+        return NextResponse.redirect(`${origin}/announcements`)
       } else {
         console.error('Profile not found:', profileError)
         // プロフィールが見つからない場合はログインページへ

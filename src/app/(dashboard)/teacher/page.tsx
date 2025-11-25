@@ -144,8 +144,14 @@ export default function TeacherDashboard() {
       {/* Navigation */}
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-600">先生ダッシュボード</h1>
+          <h1 className="text-2xl font-bold text-indigo-600">先生マッチング</h1>
           <div className="flex items-center gap-4">
+            <Link
+              href="/announcements"
+              className="text-indigo-600 hover:text-indigo-700 transition-colors"
+            >
+              全体告知
+            </Link>
             <Link
               href="/board"
               className="text-indigo-600 hover:text-indigo-700 transition-colors"

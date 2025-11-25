@@ -33,14 +33,8 @@ export default function LoginPage() {
         .eq('id', data.user.id)
         .single()
 
-      // ロールに応じてリダイレクト
-      if (profile?.role === 'teacher') {
-        router.push('/teacher')
-      } else if (profile?.role === 'student') {
-        router.push('/student')
-      } else {
-        router.push('/')
-      }
+      // ログイン後は全体告知ページへリダイレクト
+      router.push('/announcements')
     } catch (err: any) {
       setError(err.message || 'ログインに失敗しました')
     } finally {

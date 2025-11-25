@@ -188,22 +188,28 @@ export default function MessagesPage() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-indigo-600">メッセージ</h1>
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push(profile?.role === 'teacher' ? '/teacher' : '/student')}
-              className="text-indigo-600 hover:text-indigo-700"
+            <Link
+              href="/announcements"
+              className="text-indigo-600 hover:text-indigo-700 transition-colors"
             >
-              ダッシュボード
-            </button>
+              全体告知
+            </Link>
             <Link
               href="/board"
-              className="text-indigo-600 hover:text-indigo-700"
+              className="text-indigo-600 hover:text-indigo-700 transition-colors"
             >
               掲示板
+            </Link>
+            <Link
+              href={profile?.role === 'teacher' ? '/teacher' : '/student'}
+              className="text-indigo-600 hover:text-indigo-700 transition-colors"
+            >
+              先生マッチング
             </Link>
             <span className="text-gray-700 font-medium">{profile?.full_name}</span>
             <button
               onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 transition-colors"
             >
               ログアウト
             </button>

@@ -314,14 +314,20 @@ export default function BulletinBoardPage() {
           <h1 className="text-2xl font-bold text-indigo-600">掲示板</h1>
           <div className="flex items-center gap-4">
             <Link
-              href={profile?.role === 'teacher' ? '/teacher' : '/student'}
-              className="text-indigo-600 hover:text-indigo-700"
+              href="/announcements"
+              className="text-indigo-600 hover:text-indigo-700 transition-colors"
             >
-              ダッシュボード
+              全体告知
+            </Link>
+            <Link
+              href={profile?.role === 'teacher' ? '/teacher' : '/student'}
+              className="text-indigo-600 hover:text-indigo-700 transition-colors"
+            >
+              先生マッチング
             </Link>
             <Link
               href="/messages"
-              className="text-indigo-600 hover:text-indigo-700"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >
               メッセージ
             </Link>
