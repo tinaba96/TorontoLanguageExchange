@@ -233,6 +233,14 @@ export default function AnnouncementsPage() {
             >
               メッセージ
             </Link>
+            {profile?.is_admin && (
+              <Link
+                href="/settings"
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                設定
+              </Link>
+            )}
             <span className="text-gray-700 font-medium">{profile?.full_name}</span>
             <button
               onClick={handleLogout}

@@ -10,6 +10,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [role, setRole] = useState<'teacher' | 'student'>('student')
+  const [passphrase, setPassphrase] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -21,6 +22,22 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
+      // 合言葉の検証
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'registration_passphrase')
+        .single()
+
+      if (settingsError) {
+        console.error('Settings error:', settingsError)
+        throw new Error('システムエラーが発生しました')
+      }
+
+      if (passphrase !== settingsData?.value) {
+        throw new Error('合言葉が正しくありません')
+      }
+
       // デバッグ: Supabaseクライアントの確認
       console.log('Supabase client created:', !!supabase)
       console.log('Email:', email)
@@ -183,6 +200,24 @@ export default function SignUpPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="••••••••"
             />
+          </div>
+
+          <div>
+            <label htmlFor="passphrase" className="block text-sm font-medium text-gray-700 mb-2">
+              合言葉
+            </label>
+            <input
+              id="passphrase"
+              type="text"
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="運営から共有された合言葉を入力"
+            />
+            <p className="mt-1 text-sm text-gray-500">
+              登録には合言葉が必要です
+            </p>
           </div>
 
           <button
