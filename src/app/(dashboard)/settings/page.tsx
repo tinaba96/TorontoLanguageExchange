@@ -151,7 +151,7 @@ export default function SettingsPage() {
               href={profile?.role === 'teacher' ? '/teacher' : '/student'}
               className="text-indigo-600 hover:text-indigo-700 transition-colors"
             >
-              先生マッチング
+              {profile?.role === 'teacher' ? '先生マッチング' : 'プロフィール'}
             </Link>
             <Link
               href="/messages"
