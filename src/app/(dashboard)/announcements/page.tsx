@@ -7,6 +7,13 @@ import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
 import RichTextEditor from '@/components/RichTextEditor'
 
+interface LikeUser {
+  id: string
+  full_name: string
+  email: string
+  created_at: string
+}
+
 interface Announcement {
   id: string
   user_id: string
@@ -16,6 +23,9 @@ interface Announcement {
   created_at: string
   updated_at: string
   author: Profile
+  likes_count: number
+  user_has_liked: boolean
+  liked_users: LikeUser[]
 }
 
 export default function AnnouncementsPage() {
@@ -28,6 +38,7 @@ export default function AnnouncementsPage() {
   const [newIsPinned, setNewIsPinned] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null)
+  const [showLikesModal, setShowLikesModal] = useState<Announcement | null>(null)
 
   const router = useRouter()
   const supabase = createClient()
@@ -38,7 +49,7 @@ export default function AnnouncementsPage() {
 
   useEffect(() => {
     // リアルタイム更新をサブスクライブ
-    const channel = supabase
+    const announcementsChannel = supabase
       .channel('announcements-changes')
       .on(
         'postgres_changes',
@@ -53,8 +64,24 @@ export default function AnnouncementsPage() {
       )
       .subscribe()
 
+    const likesChannel = supabase
+      .channel('announcement-likes-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'announcement_likes',
+        },
+        () => {
+          loadAnnouncements()
+        }
+      )
+      .subscribe()
+
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(announcementsChannel)
+      supabase.removeChannel(likesChannel)
     }
   }, [profile])
 
@@ -102,11 +129,14 @@ export default function AnnouncementsPage() {
 
   const loadAnnouncements = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+
       const { data } = await supabase
         .from('announcements')
         .select(`
           *,
-          author:user_id(*)
+          author:user_id(*),
+          announcement_likes(id, user_id, created_at, user:user_id(id, full_name, email))
         `)
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
@@ -115,6 +145,17 @@ export default function AnnouncementsPage() {
         const formatted: Announcement[] = data.map((item: any) => ({
           ...item,
           author: Array.isArray(item.author) ? item.author[0] : item.author,
+          likes_count: item.announcement_likes?.length || 0,
+          user_has_liked: item.announcement_likes?.some((like: any) => like.user_id === user?.id) || false,
+          liked_users: item.announcement_likes?.map((like: any) => {
+            const likeUser = Array.isArray(like.user) ? like.user[0] : like.user
+            return {
+              id: likeUser?.id || '',
+              full_name: likeUser?.full_name || '名前未設定',
+              email: likeUser?.email || '',
+              created_at: like.created_at,
+            }
+          }) || [],
         }))
         setAnnouncements(formatted)
       }
@@ -211,6 +252,35 @@ export default function AnnouncementsPage() {
     setNewIsPinned(false)
     setShowNewModal(false)
     setEditingAnnouncement(null)
+  }
+
+  const handleLike = async (announcementId: string, hasLiked: boolean) => {
+    if (!profile) return
+
+    try {
+      if (hasLiked) {
+        // いいねを取り消す
+        const { error } = await supabase
+          .from('announcement_likes')
+          .delete()
+          .eq('announcement_id', announcementId)
+          .eq('user_id', profile.id)
+
+        if (error) throw error
+      } else {
+        // いいねを追加
+        const { error } = await supabase
+          .from('announcement_likes')
+          .insert({
+            announcement_id: announcementId,
+            user_id: profile.id,
+          })
+
+        if (error) throw error
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error)
+    }
   }
 
   const handleLogout = async () => {
@@ -328,29 +398,127 @@ export default function AnnouncementsPage() {
                     dangerouslySetInnerHTML={{ __html: announcement.content }}
                   />
 
-                  {/* Actions (Admin only) */}
-                  {profile?.is_admin && (
-                    <div className="flex items-center gap-4 mt-4 pt-4 border-t">
+                  {/* Like Button */}
+                  <div className="flex items-center gap-4 mt-4 pt-4 border-t">
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => openEditModal(announcement)}
-                        className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                        onClick={() => handleLike(announcement.id, announcement.user_has_liked)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${
+                          announcement.user_has_liked
+                            ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
                       >
-                        編集
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill={announcement.user_has_liked ? 'currentColor' : 'none'}
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          className="w-5 h-5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium">
+                          {announcement.likes_count > 0 ? announcement.likes_count : 'いいね'}
+                        </span>
                       </button>
-                      <button
-                        onClick={() => handleDelete(announcement.id)}
-                        className="text-red-600 hover:text-red-700 text-sm font-medium"
-                      >
-                        削除
-                      </button>
+                      {/* Admin: View likes list */}
+                      {profile?.is_admin && announcement.likes_count > 0 && (
+                        <button
+                          onClick={() => setShowLikesModal(announcement)}
+                          className="text-indigo-600 hover:text-indigo-700 text-sm font-medium underline"
+                        >
+                          一覧を見る
+                        </button>
+                      )}
                     </div>
-                  )}
+
+                    {/* Actions (Admin only) */}
+                    {profile?.is_admin && (
+                      <>
+                        <button
+                          onClick={() => openEditModal(announcement)}
+                          className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                        >
+                          編集
+                        </button>
+                        <button
+                          onClick={() => handleDelete(announcement.id)}
+                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                        >
+                          削除
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ))
           )}
         </div>
       </div>
+
+      {/* Likes List Modal (Admin only) */}
+      {showLikesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">
+                  いいねしたユーザー ({showLikesModal.likes_count}人)
+                </h2>
+                <button
+                  onClick={() => setShowLikesModal(null)}
+                  className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">{showLikesModal.title}</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {showLikesModal.liked_users.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">いいねしたユーザーはいません</p>
+              ) : (
+                <div className="space-y-3">
+                  {showLikesModal.liked_users.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                          {user.full_name?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{user.full_name}</p>
+                          <p className="text-sm text-gray-500">{user.email}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        {new Date(user.created_at).toLocaleString('ja-JP')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t">
+              <button
+                onClick={() => setShowLikesModal(null)}
+                className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New/Edit Modal */}
       {(showNewModal || editingAnnouncement) && (
