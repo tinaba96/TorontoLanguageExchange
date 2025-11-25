@@ -17,6 +17,7 @@ export type Database = {
           role: 'teacher' | 'student'
           avatar_url: string | null
           is_admin: boolean
+          passphrase_version: number
           created_at: string
           updated_at: string
         }
@@ -27,6 +28,7 @@ export type Database = {
           role: 'teacher' | 'student'
           avatar_url?: string | null
           is_admin?: boolean
+          passphrase_version?: number
           created_at?: string
           updated_at?: string
         }
@@ -37,6 +39,7 @@ export type Database = {
           role?: 'teacher' | 'student'
           avatar_url?: string | null
           is_admin?: boolean
+          passphrase_version?: number
           created_at?: string
           updated_at?: string
         }

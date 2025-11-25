@@ -69,7 +69,18 @@ export default function SettingsPage() {
     setMessage(null)
 
     try {
-      const { error } = await supabase
+      // 現在のバージョンを取得
+      const { data: versionData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'passphrase_version')
+        .single()
+
+      const currentVersion = parseInt(versionData?.value || '1', 10)
+      const newVersion = currentVersion + 1
+
+      // 合言葉を更新
+      const { error: passphraseError } = await supabase
         .from('app_settings')
         .update({
           value: newPassphrase.trim(),
@@ -77,10 +88,21 @@ export default function SettingsPage() {
         })
         .eq('key', 'registration_passphrase')
 
-      if (error) throw error
+      if (passphraseError) throw passphraseError
+
+      // バージョンをインクリメント
+      const { error: versionError } = await supabase
+        .from('app_settings')
+        .update({
+          value: newVersion.toString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('key', 'passphrase_version')
+
+      if (versionError) throw versionError
 
       setPassphrase(newPassphrase.trim())
-      setMessage({ type: 'success', text: '合言葉を更新しました' })
+      setMessage({ type: 'success', text: '合言葉を更新しました。既存ユーザーは次回ログイン時に新しい合言葉の入力が必要になります。' })
     } catch (error) {
       console.error('Error updating passphrase:', error)
       setMessage({ type: 'error', text: '合言葉の更新に失敗しました' })

@@ -1,6 +1,7 @@
 -- =====================================
 -- Passphrase Feature (合言葉)
 -- Registration requires correct passphrase
+-- Existing users need to re-verify when passphrase changes
 -- =====================================
 
 -- =====================================
@@ -18,6 +19,19 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
 INSERT INTO public.app_settings (key, value)
 VALUES ('registration_passphrase', 'toronto2024')
 ON CONFLICT (key) DO NOTHING;
+
+-- Insert passphrase version (increments when passphrase changes)
+INSERT INTO public.app_settings (key, value)
+VALUES ('passphrase_version', '1')
+ON CONFLICT (key) DO NOTHING;
+
+-- =====================================
+-- 2. ADD PASSPHRASE VERSION TO PROFILES
+-- =====================================
+
+-- Add column to track which passphrase version user verified
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS passphrase_version integer DEFAULT 0;
 
 -- =====================================
 -- 2. ROW LEVEL SECURITY (RLS)

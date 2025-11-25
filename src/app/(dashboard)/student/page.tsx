@@ -38,12 +38,29 @@ export default function StudentDashboard() {
         return
       }
 
-      // プロフィール取得
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      // プロフィールとpassphrase_versionを取得
+      const [profileResult, versionResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'passphrase_version')
+          .single()
+      ])
+
+      const profileData = profileResult.data
+      const userVersion = profileData?.passphrase_version || 0
+      const currentVersion = parseInt(versionResult.data?.value || '1', 10)
+
+      // バージョンが古ければ再認証ページへ
+      if (userVersion < currentVersion) {
+        router.push('/verify-passphrase')
+        return
+      }
 
       if ((profileData as any)?.role !== 'student') {
         router.push('/')

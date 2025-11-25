@@ -22,21 +22,30 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
-      // 合言葉の検証
-      const { data: settingsData, error: settingsError } = await supabase
-        .from('app_settings')
-        .select('value')
-        .eq('key', 'registration_passphrase')
-        .single()
+      // 合言葉とバージョンの検証
+      const [passphraseResult, versionResult] = await Promise.all([
+        supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'registration_passphrase')
+          .single(),
+        supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'passphrase_version')
+          .single()
+      ])
 
-      if (settingsError) {
-        console.error('Settings error:', settingsError)
+      if (passphraseResult.error) {
+        console.error('Settings error:', passphraseResult.error)
         throw new Error('システムエラーが発生しました')
       }
 
-      if (passphrase !== settingsData?.value) {
+      if (passphrase !== passphraseResult.data?.value) {
         throw new Error('合言葉が正しくありません')
       }
+
+      const currentVersion = parseInt(versionResult.data?.value || '1', 10)
 
       // デバッグ: Supabaseクライアントの確認
       console.log('Supabase client created:', !!supabase)
@@ -113,12 +122,14 @@ export default function SignUpPage() {
       // 少し待ってからリダイレクト（トリガーが完了するまで）
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // ロールに応じてリダイレクト
-      if (role === 'teacher') {
-        router.push('/teacher')
-      } else {
-        router.push('/student')
-      }
+      // passphrase_versionを更新
+      await supabase
+        .from('profiles')
+        .update({ passphrase_version: currentVersion })
+        .eq('id', authData.user.id)
+
+      // 全体告知ページへリダイレクト
+      router.push('/announcements')
     } catch (err: any) {
       console.error('Signup error:', err)
       setError(err.message || '登録に失敗しました。もう一度お試しください。')
