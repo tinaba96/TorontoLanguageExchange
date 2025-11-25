@@ -127,19 +127,10 @@ export default function Home() {
         <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              マッチング
+              全体告知
             </h3>
             <p className="text-gray-600">
-              日本人が教えたいEnglish Speakerを選んでマッチング
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              メッセージ
-            </h3>
-            <p className="text-gray-600">
-              マッチング後すぐにメッセージでやり取り開始
+              運営からのお知らせやイベント情報をチェック
             </p>
           </div>
 
@@ -154,10 +145,19 @@ export default function Home() {
 
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              全体告知
+              マッチング
             </h3>
             <p className="text-gray-600">
-              運営からのお知らせやイベント情報をチェック
+              日本人が教えたいEnglish Speakerを選んでマッチング
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              メッセージ
+            </h3>
+            <p className="text-gray-600">
+              マッチング後すぐにメッセージでやり取り開始
             </p>
           </div>
         </div>
