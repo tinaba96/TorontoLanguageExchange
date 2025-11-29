@@ -1,203 +1,215 @@
-'use client'
+"use client";
 
-import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import type { Profile, MatchWithProfiles, MessageWithSender } from '@/lib/types/database.types'
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import type {
+  Profile,
+  MatchWithProfiles,
+  MessageWithSender,
+} from "@/lib/types/database.types";
 
 export default function MessagesPage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [matches, setMatches] = useState<MatchWithProfiles[]>([])
-  const [selectedMatch, setSelectedMatch] = useState<MatchWithProfiles | null>(null)
-  const [messages, setMessages] = useState<MessageWithSender[]>([])
-  const [newMessage, setNewMessage] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [matches, setMatches] = useState<MatchWithProfiles[]>([]);
+  const [selectedMatch, setSelectedMatch] = useState<MatchWithProfiles | null>(
+    null
+  );
+  const [messages, setMessages] = useState<MessageWithSender[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const router = useRouter()
-  const supabase = createClient()
+  const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   useEffect(() => {
     if (selectedMatch) {
-      loadMessages(selectedMatch.id)
+      loadMessages(selectedMatch.id);
 
       // リアルタイム更新をサブスクライブ
       const channel = supabase
         .channel(`match-${selectedMatch.id}`)
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
             filter: `match_id=eq.${selectedMatch.id}`,
           },
           (payload) => {
-            console.log('🔔 New message received:', payload)
-            loadMessages(selectedMatch.id)
+            console.log("🔔 New message received:", payload);
+            loadMessages(selectedMatch.id);
           }
         )
         .subscribe((status) => {
-          console.log('📡 Realtime subscription status:', status)
-        })
+          console.log("📡 Realtime subscription status:", status);
+        });
 
       return () => {
-        supabase.removeChannel(channel)
-      }
+        supabase.removeChannel(channel);
+      };
     }
-  }, [selectedMatch])
+  }, [selectedMatch]);
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    scrollToBottom();
+  }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push('/login')
-        return
+        router.push("/login");
+        return;
       }
 
       // プロフィールとpassphrase_versionを取得
       const [profileResult, versionResult] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
+          .from("app_settings")
+          .select("value")
+          .eq("key", "passphrase_version")
           .single(),
-        supabase
-          .from('app_settings')
-          .select('value')
-          .eq('key', 'passphrase_version')
-          .single()
-      ])
+      ]);
 
-      const profileData = profileResult.data
-      const userVersion = profileData?.passphrase_version || 0
-      const currentVersion = parseInt(versionResult.data?.value || '1', 10)
+      const profileData = profileResult.data;
+      const userVersion = profileData?.passphrase_version || 0;
+      const currentVersion = parseInt(versionResult.data?.value || "1", 10);
 
       // adminユーザー以外でバージョンが古ければ再認証ページへ
       if (!profileData?.is_admin && userVersion < currentVersion) {
-        router.push('/verify-passphrase')
-        return
+        router.push("/verify-passphrase");
+        return;
       }
 
-      setProfile(profileData)
+      setProfile(profileData);
 
       // マッチング一覧を取得
       const { data: matchesData } = await supabase
-        .from('matches')
-        .select(`
+        .from("matches")
+        .select(
+          `
           *,
           teacher:teacher_id(*),
           student:student_id(*, student_profile:student_profiles(*))
-        `)
+        `
+        )
         .or(`teacher_id.eq.${user.id},student_id.eq.${user.id}`)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
 
       if (matchesData) {
         // データを MatchWithProfiles 型に変換
-        const formattedMatches: MatchWithProfiles[] = matchesData.map((match: any) => ({
-          ...match,
-          teacher: Array.isArray(match.teacher) ? match.teacher[0] : match.teacher,
-          student: {
-            ...(Array.isArray(match.student) ? match.student[0] : match.student),
-            student_profile: Array.isArray(match.student?.student_profile)
-              ? match.student.student_profile[0] || null
-              : match.student?.student_profile || null
-          }
-        }))
-        setMatches(formattedMatches)
+        const formattedMatches: MatchWithProfiles[] = matchesData.map(
+          (match: any) => ({
+            ...match,
+            teacher: Array.isArray(match.teacher)
+              ? match.teacher[0]
+              : match.teacher,
+            student: {
+              ...(Array.isArray(match.student)
+                ? match.student[0]
+                : match.student),
+              student_profile: Array.isArray(match.student?.student_profile)
+                ? match.student.student_profile[0] || null
+                : match.student?.student_profile || null,
+            },
+          })
+        );
+        setMatches(formattedMatches);
 
         // 最初のマッチングを選択
         if (formattedMatches.length > 0) {
-          setSelectedMatch(formattedMatches[0])
+          setSelectedMatch(formattedMatches[0]);
         }
       }
     } catch (error) {
-      console.error('Error loading data:', error)
+      console.error("Error loading data:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const loadMessages = async (matchId: string) => {
     try {
       const { data } = await supabase
-        .from('messages')
-        .select(`
+        .from("messages")
+        .select(
+          `
           *,
           sender:sender_id(*)
-        `)
-        .eq('match_id', matchId)
-        .order('created_at', { ascending: true })
+        `
+        )
+        .eq("match_id", matchId)
+        .order("created_at", { ascending: true });
 
       if (data) {
         const formattedMessages: MessageWithSender[] = data.map((msg: any) => ({
           ...msg,
-          sender: Array.isArray(msg.sender) ? msg.sender[0] : msg.sender
-        }))
-        setMessages(formattedMessages)
+          sender: Array.isArray(msg.sender) ? msg.sender[0] : msg.sender,
+        }));
+        setMessages(formattedMessages);
       }
     } catch (error) {
-      console.error('Error loading messages:', error)
+      console.error("Error loading messages:", error);
     }
-  }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newMessage.trim() || !selectedMatch || !profile) return
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedMatch || !profile) return;
 
-    setSending(true)
+    setSending(true);
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          match_id: selectedMatch.id,
-          sender_id: profile.id,
-          content: newMessage.trim(),
-        } as any)
+      const { error } = await supabase.from("messages").insert({
+        match_id: selectedMatch.id,
+        sender_id: profile.id,
+        content: newMessage.trim(),
+      } as any);
 
-      if (error) throw error
+      if (error) throw error;
 
-      setNewMessage('')
+      setNewMessage("");
     } catch (error) {
-      console.error('Error sending message:', error)
-      alert('メッセージの送信に失敗しました')
+      console.error("Error sending message:", error);
+      alert("メッセージの送信に失敗しました。再度お試しください。");
     } finally {
-      setSending(false)
+      setSending(false);
     }
-  }
+  };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
+    await supabase.auth.signOut();
+    router.push("/");
+  };
 
   const getOtherUser = (match: MatchWithProfiles) => {
-    if (!profile) return null
-    return profile.id === match.teacher_id ? match.student : match.teacher
-  }
+    if (!profile) return null;
+    return profile.id === match.teacher_id ? match.student : match.teacher;
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-xl">読み込み中...</div>
       </div>
-    )
+    );
   }
 
   return (
@@ -219,10 +231,10 @@ export default function MessagesPage() {
               掲示板
             </Link>
             <Link
-              href={profile?.role === 'teacher' ? '/teacher' : '/student'}
+              href={profile?.role === "teacher" ? "/teacher" : "/student"}
               className="text-indigo-600 hover:text-indigo-700 transition-colors"
             >
-              {profile?.role === 'teacher' ? '先生マッチング' : 'プロフィール'}
+              {profile?.role === "teacher" ? "先生マッチング" : "プロフィール"}
             </Link>
             {profile?.is_admin && (
               <Link
@@ -232,7 +244,9 @@ export default function MessagesPage() {
                 設定
               </Link>
             )}
-            <span className="text-gray-700 font-medium">{profile?.full_name}</span>
+            <span className="text-gray-700 font-medium">
+              {profile?.full_name}
+            </span>
             <button
               onClick={handleLogout}
               className="text-gray-600 hover:text-gray-900 transition-colors"
@@ -257,30 +271,30 @@ export default function MessagesPage() {
               </div>
               <div className="divide-y">
                 {matches.map((match) => {
-                  const otherUser = getOtherUser(match)
+                  const otherUser = getOtherUser(match);
                   return (
                     <button
                       key={match.id}
                       onClick={() => setSelectedMatch(match)}
                       className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
-                        selectedMatch?.id === match.id ? 'bg-indigo-50' : ''
+                        selectedMatch?.id === match.id ? "bg-indigo-50" : ""
                       }`}
                     >
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                          {otherUser?.full_name?.charAt(0) || 'U'}
+                          {otherUser?.full_name?.charAt(0) || "U"}
                         </div>
                         <div className="ml-3 flex-1">
                           <p className="font-semibold text-gray-900">
-                            {otherUser?.full_name || '名前未設定'}
+                            {otherUser?.full_name || "名前未設定"}
                           </p>
                           <p className="text-sm text-gray-500">
-                            {profile?.id === match.teacher_id ? '生徒' : '先生'}
+                            {profile?.id === match.teacher_id ? "生徒" : "先生"}
                           </p>
                         </div>
                       </div>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -293,14 +307,18 @@ export default function MessagesPage() {
                   <div className="p-4 border-b">
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                        {getOtherUser(selectedMatch)?.full_name?.charAt(0) || 'U'}
+                        {getOtherUser(selectedMatch)?.full_name?.charAt(0) ||
+                          "U"}
                       </div>
                       <div className="ml-3">
                         <p className="font-semibold text-gray-900">
-                          {getOtherUser(selectedMatch)?.full_name || '名前未設定'}
+                          {getOtherUser(selectedMatch)?.full_name ||
+                            "名前未設定"}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {profile?.id === selectedMatch.teacher_id ? '生徒' : '先生'}
+                          {profile?.id === selectedMatch.teacher_id
+                            ? "生徒"
+                            : "先生"}
                         </p>
                       </div>
                     </div>
@@ -314,33 +332,39 @@ export default function MessagesPage() {
                       </div>
                     ) : (
                       messages.map((message) => {
-                        const isOwnMessage = message.sender_id === profile?.id
+                        const isOwnMessage = message.sender_id === profile?.id;
                         return (
                           <div
                             key={message.id}
-                            className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                            className={`flex ${
+                              isOwnMessage ? "justify-end" : "justify-start"
+                            }`}
                           >
                             <div
                               className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                                 isOwnMessage
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'bg-gray-200 text-gray-900'
+                                  ? "bg-indigo-600 text-white"
+                                  : "bg-gray-200 text-gray-900"
                               }`}
                             >
                               <p className="text-sm">{message.content}</p>
                               <p
                                 className={`text-xs mt-1 ${
-                                  isOwnMessage ? 'text-indigo-200' : 'text-gray-500'
+                                  isOwnMessage
+                                    ? "text-indigo-200"
+                                    : "text-gray-500"
                                 }`}
                               >
-                                {new Date(message.created_at).toLocaleTimeString('ja-JP', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
+                                {new Date(
+                                  message.created_at
+                                ).toLocaleTimeString("ja-JP", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
                                 })}
                               </p>
                             </div>
                           </div>
-                        )
+                        );
                       })
                     )}
                     <div ref={messagesEndRef} />
@@ -376,5 +400,5 @@ export default function MessagesPage() {
         )}
       </div>
     </div>
-  )
+  );
 }
