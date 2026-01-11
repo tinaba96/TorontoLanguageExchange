@@ -11,7 +11,9 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [passphrase, setPassphrase] = useState('')
   const [newPassphrase, setNewPassphrase] = useState('')
+  const [emailVerificationRequired, setEmailVerificationRequired] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [savingEmailVerification, setSavingEmailVerification] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const router = useRouter()
@@ -53,6 +55,17 @@ export default function SettingsPage() {
       if (settingsData) {
         setPassphrase(settingsData.value)
         setNewPassphrase(settingsData.value)
+      }
+
+      // メール認証設定を取得
+      const { data: emailVerificationData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'email_verification_required')
+        .single()
+
+      if (emailVerificationData) {
+        setEmailVerificationRequired(emailVerificationData.value === 'true')
       }
     } catch (error) {
       console.error('Error loading data:', error)
@@ -108,6 +121,58 @@ export default function SettingsPage() {
       setMessage({ type: 'error', text: '合言葉の更新に失敗しました' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleToggleEmailVerification = async () => {
+    setSavingEmailVerification(true)
+    setMessage(null)
+
+    const newValue = !emailVerificationRequired
+
+    try {
+      // 設定が存在するか確認
+      const { data: existingData } = await supabase
+        .from('app_settings')
+        .select('id')
+        .eq('key', 'email_verification_required')
+        .single()
+
+      if (existingData) {
+        // 更新
+        const { error } = await supabase
+          .from('app_settings')
+          .update({
+            value: newValue.toString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('key', 'email_verification_required')
+
+        if (error) throw error
+      } else {
+        // 新規作成
+        const { error } = await supabase
+          .from('app_settings')
+          .insert({
+            key: 'email_verification_required',
+            value: newValue.toString(),
+          })
+
+        if (error) throw error
+      }
+
+      setEmailVerificationRequired(newValue)
+      setMessage({
+        type: 'success',
+        text: newValue
+          ? 'メール認証を有効にしました。新規ユーザーはメール認証後にログインできます。'
+          : 'メール認証を無効にしました。新規ユーザーは認証なしでログインできます。',
+      })
+    } catch (error) {
+      console.error('Error updating email verification setting:', error)
+      setMessage({ type: 'error', text: 'メール認証設定の更新に失敗しました' })
+    } finally {
+      setSavingEmailVerification(false)
     }
   }
 
@@ -223,6 +288,42 @@ export default function SettingsPage() {
               {saving ? '更新中...' : '合言葉を更新'}
             </button>
           </form>
+        </div>
+
+        {/* メール認証設定 */}
+        <div className="bg-white rounded-lg shadow-lg p-8 mt-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">メール認証設定</h2>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-900 font-medium">新規登録時のメール認証</p>
+              <p className="text-sm text-gray-500 mt-1">
+                {emailVerificationRequired
+                  ? 'ONの場合、新規ユーザーはメールの確認リンクをクリックしてからログインできます'
+                  : 'OFFの場合、新規ユーザーはメール認証なしで即座にログインできます'}
+              </p>
+            </div>
+            <button
+              onClick={handleToggleEmailVerification}
+              disabled={savingEmailVerification}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${
+                emailVerificationRequired ? 'bg-indigo-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  emailVerificationRequired ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              <strong>注意:</strong> この設定はSupabaseダッシュボードの「Confirm email」設定と連携して動作します。
+              Supabase側で認証メール送信が有効になっている必要があります。
+            </p>
+          </div>
         </div>
       </div>
     </div>

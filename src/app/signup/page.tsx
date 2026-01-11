@@ -23,7 +23,7 @@ export default function SignUpPage() {
 
     try {
       // 合言葉とバージョンの検証
-      const [passphraseResult, versionResult] = await Promise.all([
+      const [passphraseResult, versionResult, emailVerificationResult] = await Promise.all([
         supabase
           .from('app_settings')
           .select('value')
@@ -33,8 +33,15 @@ export default function SignUpPage() {
           .from('app_settings')
           .select('value')
           .eq('key', 'passphrase_version')
+          .single(),
+        supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'email_verification_required')
           .single()
       ])
+
+      const emailVerificationRequired = emailVerificationResult.data?.value === 'true'
 
       if (passphraseResult.error) {
         console.error('Settings error:', passphraseResult.error)
@@ -111,14 +118,14 @@ export default function SignUpPage() {
       console.log('=== NO CLIENT-SIDE PROFILE CREATION ===')
       console.log('Timestamp:', new Date().toISOString())
 
-      // メール確認が必要な場合
-      if (authData.user && !authData.session) {
+      // メール認証が必要な設定の場合
+      if (emailVerificationRequired && authData.user && !authData.session) {
         alert('登録完了！メールに送信された確認リンクをクリックしてください。')
         router.push('/login')
         return
       }
 
-      // メール確認不要の場合（即座にログイン）
+      // メール認証不要の場合、または即座にセッションが発行された場合
       // 少し待ってからリダイレクト（トリガーが完了するまで）
       await new Promise(resolve => setTimeout(resolve, 1000))
 
@@ -127,6 +134,14 @@ export default function SignUpPage() {
         .from('profiles')
         .update({ passphrase_version: currentVersion })
         .eq('id', authData.user.id)
+
+      // メール認証不要の設定で、セッションがない場合は自動ログイン
+      if (!emailVerificationRequired && !authData.session) {
+        // セッションがない場合でも、認証不要設定ならログインページへ案内
+        alert('登録完了！ログインしてください。')
+        router.push('/login')
+        return
+      }
 
       // 全体告知ページへリダイレクト
       router.push('/announcements')

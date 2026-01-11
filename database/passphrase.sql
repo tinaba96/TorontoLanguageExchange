@@ -25,6 +25,11 @@ INSERT INTO public.app_settings (key, value)
 VALUES ('passphrase_version', '1')
 ON CONFLICT (key) DO NOTHING;
 
+-- Insert email verification setting (default: false - no email verification required)
+INSERT INTO public.app_settings (key, value)
+VALUES ('email_verification_required', 'false')
+ON CONFLICT (key) DO NOTHING;
+
 -- =====================================
 -- 2. ADD PASSPHRASE VERSION TO PROFILES
 -- =====================================

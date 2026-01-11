@@ -26,6 +26,21 @@ export default function LoginPage() {
 
       if (error) throw error
 
+      // メール認証設定を確認
+      const { data: emailVerificationSetting } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'email_verification_required')
+        .single()
+
+      const emailVerificationRequired = emailVerificationSetting?.value === 'true'
+
+      // メール認証が必要で、まだ認証されていない場合
+      if (emailVerificationRequired && !data.user.email_confirmed_at) {
+        await supabase.auth.signOut()
+        throw new Error('メール認証が完了していません。登録時に送信された確認メールのリンクをクリックしてください。')
+      }
+
       // ユーザーのロールを取得
       const { data: profile } = await supabase
         .from('profiles')
