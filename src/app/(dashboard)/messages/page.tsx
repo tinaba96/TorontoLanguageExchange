@@ -188,7 +188,7 @@ export default function MessagesPage() {
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
-      alert("メッセージの送信に失敗しました。再度お試しください。");
+      alert("メッセージの送信に失敗しました。再度お試しくださいませ。");
     } finally {
       setSending(false);
     }
