@@ -124,24 +124,42 @@ export default function Home() {
           </div>
         )}
 
+        {/* ログイン不要でアクセス可能 */}
+        <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            href="/announcements"
+            className="px-8 py-3 bg-white text-gray-700 border-2 border-gray-300 rounded-lg font-semibold hover:border-indigo-600 hover:text-indigo-600 transition-colors"
+          >
+            全体告知を見る
+          </Link>
+          <Link
+            href="/board"
+            className="px-8 py-3 bg-white text-gray-700 border-2 border-gray-300 rounded-lg font-semibold hover:border-indigo-600 hover:text-indigo-600 transition-colors"
+          >
+            掲示板を見る
+          </Link>
+        </div>
+
         <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <Link href="/announcements" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               全体告知
             </h3>
             <p className="text-gray-600">
               運営からのお知らせやイベント情報をチェック
             </p>
-          </div>
+            <p className="text-indigo-600 text-sm mt-2">ログイン不要</p>
+          </Link>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <Link href="/board" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               掲示板
             </h3>
             <p className="text-gray-600">
               ユーザー同士で情報交換や交流ができる掲示板
             </p>
-          </div>
+            <p className="text-indigo-600 text-sm mt-2">ログイン不要</p>
+          </Link>
 
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -150,6 +168,7 @@ export default function Home() {
             <p className="text-gray-600">
               日本人が教えたいEnglish Speakerを選んでマッチング
             </p>
+            <p className="text-gray-400 text-sm mt-2">要ログイン</p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md">
@@ -159,6 +178,7 @@ export default function Home() {
             <p className="text-gray-600">
               マッチング後すぐにメッセージでやり取り開始
             </p>
+            <p className="text-gray-400 text-sm mt-2">要ログイン</p>
           </div>
         </div>
       </div>
