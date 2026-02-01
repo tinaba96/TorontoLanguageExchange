@@ -11,6 +11,7 @@ interface Post {
   user_id: string
   title: string
   content: string
+  author_name: string | null
   created_at: string
   updated_at: string
   author: Profile
@@ -24,8 +25,32 @@ interface Comment {
   post_id: string
   user_id: string
   content: string
+  author_name: string | null
   created_at: string
   author: Profile
+}
+
+// ローカルストレージのキー
+const ANON_LIKES_KEY = 'anon_post_likes'
+
+// 匿名いいねをローカルストレージから取得
+const getAnonLikes = (): string[] => {
+  if (typeof window === 'undefined') return []
+  try {
+    const stored = localStorage.getItem(ANON_LIKES_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+// 匿名いいねをローカルストレージに保存
+const addAnonLike = (postId: string) => {
+  const likes = getAnonLikes()
+  if (!likes.includes(postId)) {
+    likes.push(postId)
+    localStorage.setItem(ANON_LIKES_KEY, JSON.stringify(likes))
+  }
 }
 
 export default function BulletinBoardPage() {
@@ -37,13 +62,18 @@ export default function BulletinBoardPage() {
   const [comments, setComments] = useState<Comment[]>([])
   const [newPostTitle, setNewPostTitle] = useState('')
   const [newPostContent, setNewPostContent] = useState('')
+  const [newPostAuthor, setNewPostAuthor] = useState('')
   const [newComment, setNewComment] = useState('')
+  const [newCommentAuthor, setNewCommentAuthor] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [anonLikedPosts, setAnonLikedPosts] = useState<string[]>([])
 
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
+    // ローカルストレージから匿名いいねを読み込む
+    setAnonLikedPosts(getAnonLikes())
     loadData()
   }, [])
 
@@ -116,36 +146,17 @@ export default function BulletinBoardPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      // プロフィールとpassphrase_versionを取得
-      const [profileResult, versionResult] = await Promise.all([
-        supabase
+      if (user) {
+        // ログインしている場合はプロフィールを取得
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .single(),
-        supabase
-          .from('app_settings')
-          .select('value')
-          .eq('key', 'passphrase_version')
           .single()
-      ])
 
-      const profileData = profileResult.data
-      const userVersion = profileData?.passphrase_version || 0
-      const currentVersion = parseInt(versionResult.data?.value || '1', 10)
-
-      // adminユーザー以外でバージョンが古ければ再認証ページへ
-      if (!profileData?.is_admin && userVersion < currentVersion) {
-        router.push('/verify-passphrase')
-        return
+        setProfile(profileData)
       }
-
-      setProfile(profileData)
+      // ログインしていなくても投稿を読み込む
       await loadPosts()
     } catch (error) {
       console.error('Error loading data:', error)
@@ -157,7 +168,6 @@ export default function BulletinBoardPage() {
   const loadPosts = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
 
       const { data: postsData } = await supabase
         .from('posts')
@@ -183,19 +193,27 @@ export default function BulletinBoardPage() {
               .eq('post_id', post.id)
 
             // ユーザーがいいねしているか確認
-            const { data: userLike } = await supabase
-              .from('post_likes')
-              .select('id')
-              .eq('post_id', post.id)
-              .eq('user_id', user.id)
-              .single()
+            let userHasLiked = false
+            if (user) {
+              // ログインユーザー: DBで確認
+              const { data: userLike } = await supabase
+                .from('post_likes')
+                .select('id')
+                .eq('post_id', post.id)
+                .eq('user_id', user.id)
+                .single()
+              userHasLiked = !!userLike
+            } else {
+              // 匿名ユーザー: ローカルストレージで確認
+              userHasLiked = getAnonLikes().includes(post.id)
+            }
 
             return {
               ...post,
               author: Array.isArray(post.author) ? post.author[0] : post.author,
               likes_count: likesCount || 0,
               comments_count: commentsCount || 0,
-              user_has_liked: !!userLike,
+              user_has_liked: userHasLiked,
             }
           })
         )
@@ -232,22 +250,24 @@ export default function BulletinBoardPage() {
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!profile || !newPostTitle.trim() || !newPostContent.trim()) return
+    if (!newPostTitle.trim() || !newPostContent.trim() || !newPostAuthor.trim()) return
 
     setSubmitting(true)
     try {
       const { error } = await supabase
         .from('posts')
         .insert({
-          user_id: profile.id,
+          user_id: profile?.id || null,
           title: newPostTitle.trim(),
           content: newPostContent.trim(),
+          author_name: newPostAuthor.trim(),
         })
 
       if (error) throw error
 
       setNewPostTitle('')
       setNewPostContent('')
+      setNewPostAuthor('')
       setShowNewPostModal(false)
     } catch (error) {
       console.error('Error creating post:', error)
@@ -258,29 +278,49 @@ export default function BulletinBoardPage() {
   }
 
   const handleLikeToggle = async (post: Post) => {
-    if (!profile) return
-
     try {
-      if (post.user_has_liked) {
-        // いいねを解除
-        const { error } = await supabase
-          .from('post_likes')
-          .delete()
-          .eq('post_id', post.id)
-          .eq('user_id', profile.id)
+      if (profile) {
+        // ログインユーザー: いいねのトグル
+        if (post.user_has_liked) {
+          const { error } = await supabase
+            .from('post_likes')
+            .delete()
+            .eq('post_id', post.id)
+            .eq('user_id', profile.id)
 
-        if (error) throw error
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('post_likes')
+            .insert({
+              post_id: post.id,
+              user_id: profile.id,
+            })
+
+          if (error) throw error
+        }
       } else {
+        // 匿名ユーザー: ローカルストレージでチェック
+        if (anonLikedPosts.includes(post.id)) {
+          // すでにいいね済み - 何もしない
+          return
+        }
         // いいねを追加
         const { error } = await supabase
           .from('post_likes')
           .insert({
             post_id: post.id,
-            user_id: profile.id,
+            user_id: null,
           })
 
         if (error) throw error
+
+        // ローカルストレージに保存
+        addAnonLike(post.id)
+        setAnonLikedPosts([...anonLikedPosts, post.id])
       }
+      // 投稿一覧を再読み込み
+      await loadPosts()
     } catch (error) {
       console.error('Error toggling like:', error)
     }
@@ -288,7 +328,7 @@ export default function BulletinBoardPage() {
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!profile || !selectedPost || !newComment.trim()) return
+    if (!selectedPost || !newComment.trim() || !newCommentAuthor.trim()) return
 
     setSubmitting(true)
     try {
@@ -296,13 +336,15 @@ export default function BulletinBoardPage() {
         .from('comments')
         .insert({
           post_id: selectedPost.id,
-          user_id: profile.id,
+          user_id: profile?.id || null,
           content: newComment.trim(),
+          author_name: newCommentAuthor.trim(),
         })
 
       if (error) throw error
 
       setNewComment('')
+      setNewCommentAuthor('')
     } catch (error) {
       console.error('Error adding comment:', error)
       alert('コメントの投稿に失敗しました')
@@ -337,33 +379,44 @@ export default function BulletinBoardPage() {
             >
               全体告知
             </Link>
-            <Link
-              href={profile?.role === 'teacher' ? '/teacher' : '/student'}
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              {profile?.role === 'teacher' ? '先生マッチング' : 'プロフィール'}
-            </Link>
-            <Link
-              href="/messages"
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              メッセージ
-            </Link>
-            {profile?.is_admin && (
+            {profile ? (
+              <>
+                <Link
+                  href={profile.role === 'teacher' ? '/teacher' : '/student'}
+                  className="text-indigo-600 hover:text-indigo-700 transition-colors"
+                >
+                  {profile.role === 'teacher' ? '先生マッチング' : 'プロフィール'}
+                </Link>
+                <Link
+                  href="/messages"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  メッセージ
+                </Link>
+                {profile.is_admin && (
+                  <Link
+                    href="/settings"
+                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    設定
+                  </Link>
+                )}
+                <span className="text-gray-700 font-medium">{profile.full_name}</span>
+                <button
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  ログアウト
+                </button>
+              </>
+            ) : (
               <Link
-                href="/settings"
-                className="text-gray-600 hover:text-gray-900 transition-colors"
+                href="/login"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
               >
-                設定
+                ログイン
               </Link>
             )}
-            <span className="text-gray-700 font-medium">{profile?.full_name}</span>
-            <button
-              onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              ログアウト
-            </button>
           </div>
         </div>
       </nav>
@@ -393,10 +446,10 @@ export default function BulletinBoardPage() {
                   {/* Author Info */}
                   <div className="flex items-center mb-4">
                     <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                      {post.author?.full_name?.charAt(0) || 'U'}
+                      {(post.author_name || post.author?.full_name || 'U').charAt(0)}
                     </div>
                     <div className="ml-3">
-                      <p className="font-semibold text-gray-900">{post.author?.full_name || '名前未設定'}</p>
+                      <p className="font-semibold text-gray-900">{post.author_name || post.author?.full_name || '名前未設定'}</p>
                       <p className="text-sm text-gray-500">
                         {new Date(post.created_at).toLocaleString('ja-JP')}
                       </p>
@@ -451,6 +504,19 @@ export default function BulletinBoardPage() {
               </div>
             </div>
             <form onSubmit={handleCreatePost} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  お名前
+                </label>
+                <input
+                  type="text"
+                  value={newPostAuthor}
+                  onChange={(e) => setNewPostAuthor(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="表示される名前"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   タイトル
@@ -519,10 +585,10 @@ export default function BulletinBoardPage() {
               <div className="mb-6">
                 <div className="flex items-center mb-4">
                   <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                    {selectedPost.author?.full_name?.charAt(0) || 'U'}
+                    {(selectedPost.author_name || selectedPost.author?.full_name || 'U').charAt(0)}
                   </div>
                   <div className="ml-3">
-                    <p className="font-semibold text-gray-900">{selectedPost.author?.full_name || '名前未設定'}</p>
+                    <p className="font-semibold text-gray-900">{selectedPost.author_name || selectedPost.author?.full_name || '名前未設定'}</p>
                     <p className="text-sm text-gray-500">
                       {new Date(selectedPost.created_at).toLocaleString('ja-JP')}
                     </p>
@@ -538,7 +604,14 @@ export default function BulletinBoardPage() {
                 </h3>
 
                 {/* Comment Form */}
-                <form onSubmit={handleAddComment} className="mb-6">
+                <form onSubmit={handleAddComment} className="mb-6 space-y-2">
+                  <input
+                    type="text"
+                    value={newCommentAuthor}
+                    onChange={(e) => setNewCommentAuthor(e.target.value)}
+                    placeholder="お名前"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -549,7 +622,7 @@ export default function BulletinBoardPage() {
                     />
                     <button
                       type="submit"
-                      disabled={submitting || !newComment.trim()}
+                      disabled={submitting || !newComment.trim() || !newCommentAuthor.trim()}
                       className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       送信
@@ -566,11 +639,11 @@ export default function BulletinBoardPage() {
                       <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                         <div className="flex items-center mb-2">
                           <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">
-                            {comment.author?.full_name?.charAt(0) || 'U'}
+                            {(comment.author_name || comment.author?.full_name || 'U').charAt(0)}
                           </div>
                           <div className="ml-2">
                             <p className="font-semibold text-sm text-gray-900">
-                              {comment.author?.full_name || '名前未設定'}
+                              {comment.author_name || comment.author?.full_name || '名前未設定'}
                             </p>
                             <p className="text-xs text-gray-500">
                               {new Date(comment.created_at).toLocaleString('ja-JP')}

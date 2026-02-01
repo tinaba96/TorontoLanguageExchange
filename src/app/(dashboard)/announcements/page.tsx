@@ -7,6 +7,29 @@ import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
 import RichTextEditor from '@/components/RichTextEditor'
 
+// ローカルストレージのキー
+const ANON_ANNOUNCEMENT_LIKES_KEY = 'anon_announcement_likes'
+
+// 匿名いいねをローカルストレージから取得
+const getAnonLikes = (): string[] => {
+  if (typeof window === 'undefined') return []
+  try {
+    const stored = localStorage.getItem(ANON_ANNOUNCEMENT_LIKES_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+// 匿名いいねをローカルストレージに保存
+const addAnonLike = (announcementId: string) => {
+  const likes = getAnonLikes()
+  if (!likes.includes(announcementId)) {
+    likes.push(announcementId)
+    localStorage.setItem(ANON_ANNOUNCEMENT_LIKES_KEY, JSON.stringify(likes))
+  }
+}
+
 interface LikeUser {
   id: string
   full_name: string
@@ -39,11 +62,14 @@ export default function AnnouncementsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null)
   const [showLikesModal, setShowLikesModal] = useState<Announcement | null>(null)
+  const [anonLikedAnnouncements, setAnonLikedAnnouncements] = useState<string[]>([])
 
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
+    // ローカルストレージから匿名いいねを読み込む
+    setAnonLikedAnnouncements(getAnonLikes())
     loadData()
   }, [])
 
@@ -89,36 +115,17 @@ export default function AnnouncementsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      // プロフィールとpassphrase_versionを取得
-      const [profileResult, versionResult] = await Promise.all([
-        supabase
+      if (user) {
+        // ログインしている場合はプロフィールを取得
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .single(),
-        supabase
-          .from('app_settings')
-          .select('value')
-          .eq('key', 'passphrase_version')
           .single()
-      ])
 
-      const profileData = profileResult.data
-      const userVersion = profileData?.passphrase_version || 0
-      const currentVersion = parseInt(versionResult.data?.value || '1', 10)
-
-      // adminユーザー以外でバージョンが古ければ再認証ページへ
-      if (!profileData?.is_admin && userVersion < currentVersion) {
-        router.push('/verify-passphrase')
-        return
+        setProfile(profileData)
       }
-
-      setProfile(profileData)
+      // ログインしていなくても告知を読み込む
       await loadAnnouncements()
     } catch (error) {
       console.error('Error loading data:', error)
@@ -142,11 +149,15 @@ export default function AnnouncementsPage() {
         .order('created_at', { ascending: false })
 
       if (data) {
+        const anonLikes = getAnonLikes()
         const formatted: Announcement[] = data.map((item: any) => ({
           ...item,
           author: Array.isArray(item.author) ? item.author[0] : item.author,
           likes_count: item.announcement_likes?.length || 0,
-          user_has_liked: item.announcement_likes?.some((like: any) => like.user_id === user?.id) || false,
+          // ログインユーザー: DBで確認、匿名ユーザー: ローカルストレージで確認
+          user_has_liked: user
+            ? item.announcement_likes?.some((like: any) => like.user_id === user.id)
+            : anonLikes.includes(item.id),
           liked_users: item.announcement_likes?.map((like: any) => {
             const likeUser = Array.isArray(like.user) ? like.user[0] : like.user
             return {
@@ -255,29 +266,49 @@ export default function AnnouncementsPage() {
   }
 
   const handleLike = async (announcementId: string, hasLiked: boolean) => {
-    if (!profile) return
-
     try {
-      if (hasLiked) {
-        // いいねを取り消す
-        const { error } = await supabase
-          .from('announcement_likes')
-          .delete()
-          .eq('announcement_id', announcementId)
-          .eq('user_id', profile.id)
+      if (profile) {
+        // ログインユーザー: いいねのトグル
+        if (hasLiked) {
+          const { error } = await supabase
+            .from('announcement_likes')
+            .delete()
+            .eq('announcement_id', announcementId)
+            .eq('user_id', profile.id)
 
-        if (error) throw error
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('announcement_likes')
+            .insert({
+              announcement_id: announcementId,
+              user_id: profile.id,
+            })
+
+          if (error) throw error
+        }
       } else {
+        // 匿名ユーザー: ローカルストレージでチェック
+        if (anonLikedAnnouncements.includes(announcementId)) {
+          // すでにいいね済み - 何もしない
+          return
+        }
         // いいねを追加
         const { error } = await supabase
           .from('announcement_likes')
           .insert({
             announcement_id: announcementId,
-            user_id: profile.id,
+            user_id: null,
           })
 
         if (error) throw error
+
+        // ローカルストレージに保存
+        addAnonLike(announcementId)
+        setAnonLikedAnnouncements([...anonLikedAnnouncements, announcementId])
       }
+      // 告知を再読み込み
+      await loadAnnouncements()
     } catch (error) {
       console.error('Error toggling like:', error)
     }
@@ -309,33 +340,44 @@ export default function AnnouncementsPage() {
             >
               掲示板
             </Link>
-            <Link
-              href={profile?.role === 'teacher' ? '/teacher' : '/student'}
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              {profile?.role === 'teacher' ? '先生マッチング' : 'プロフィール'}
-            </Link>
-            <Link
-              href="/messages"
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              メッセージ
-            </Link>
-            {profile?.is_admin && (
+            {profile ? (
+              <>
+                <Link
+                  href={profile.role === 'teacher' ? '/teacher' : '/student'}
+                  className="text-indigo-600 hover:text-indigo-700 transition-colors"
+                >
+                  {profile.role === 'teacher' ? '先生マッチング' : 'プロフィール'}
+                </Link>
+                <Link
+                  href="/messages"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  メッセージ
+                </Link>
+                {profile.is_admin && (
+                  <Link
+                    href="/settings"
+                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    設定
+                  </Link>
+                )}
+                <span className="text-gray-700 font-medium">{profile.full_name}</span>
+                <button
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  ログアウト
+                </button>
+              </>
+            ) : (
               <Link
-                href="/settings"
-                className="text-gray-600 hover:text-gray-900 transition-colors"
+                href="/login"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
               >
-                設定
+                ログイン
               </Link>
             )}
-            <span className="text-gray-700 font-medium">{profile?.full_name}</span>
-            <button
-              onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              ログアウト
-            </button>
           </div>
         </div>
       </nav>
