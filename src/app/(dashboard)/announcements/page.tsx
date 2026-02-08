@@ -34,6 +34,8 @@ interface LikeUser {
   full_name: string
   email: string
   created_at: string
+  participant_name?: string
+  participant_email?: string
 }
 
 interface Announcement {
@@ -62,6 +64,9 @@ export default function AnnouncementsPage() {
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null)
   const [showLikesModal, setShowLikesModal] = useState<Announcement | null>(null)
   const [anonLikedAnnouncements, setAnonLikedAnnouncements] = useState<string[]>([])
+  const [showJoinModal, setShowJoinModal] = useState<string | null>(null)
+  const [joinName, setJoinName] = useState('')
+  const [joinEmail, setJoinEmail] = useState('')
 
   const supabase = createClient()
 
@@ -141,7 +146,7 @@ export default function AnnouncementsPage() {
         .select(`
           *,
           author:user_id(*),
-          announcement_likes(id, user_id, created_at, user:user_id(id, full_name, email))
+          announcement_likes(id, user_id, created_at, participant_name, participant_email, user:user_id(id, full_name, email))
         `)
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
@@ -160,9 +165,11 @@ export default function AnnouncementsPage() {
             const likeUser = Array.isArray(like.user) ? like.user[0] : like.user
             return {
               id: likeUser?.id || '',
-              full_name: likeUser?.full_name || '名前未設定',
-              email: likeUser?.email || '',
+              full_name: like.participant_name || likeUser?.full_name || '名前未設定',
+              email: like.participant_email || likeUser?.email || '',
               created_at: like.created_at,
+              participant_name: like.participant_name || null,
+              participant_email: like.participant_email || null,
             }
           }) || [],
         }))
@@ -263,10 +270,23 @@ export default function AnnouncementsPage() {
     setEditingAnnouncement(null)
   }
 
-  const handleLike = async (announcementId: string, hasLiked: boolean) => {
+  const handleJoinClick = (announcementId: string, hasLiked: boolean) => {
+    if (profile) {
+      // ログインユーザー: そのまま参加/取消
+      handleJoin(announcementId, hasLiked)
+    } else {
+      if (hasLiked) return // すでに参加済み
+      // 未ログインユーザー: ポップアップ表示
+      setShowJoinModal(announcementId)
+      setJoinName('')
+      setJoinEmail('')
+    }
+  }
+
+  const handleJoin = async (announcementId: string, hasLiked: boolean) => {
     try {
       if (profile) {
-        // ログインユーザー: いいねのトグル
+        // ログインユーザー: 参加のトグル
         if (hasLiked) {
           const { error } = await supabase
             .from('announcement_likes')
@@ -281,34 +301,46 @@ export default function AnnouncementsPage() {
             .insert({
               announcement_id: announcementId,
               user_id: profile.id,
+              participant_name: profile.full_name,
             })
 
           if (error) throw error
         }
-      } else {
-        // 匿名ユーザー: ローカルストレージでチェック
-        if (anonLikedAnnouncements.includes(announcementId)) {
-          // すでにいいね済み - 何もしない
-          return
-        }
-        // いいねを追加
-        const { error } = await supabase
-          .from('announcement_likes')
-          .insert({
-            announcement_id: announcementId,
-            user_id: null,
-          })
-
-        if (error) throw error
-
-        // ローカルストレージに保存
-        addAnonLike(announcementId)
-        setAnonLikedAnnouncements([...anonLikedAnnouncements, announcementId])
       }
       // 告知を再読み込み
       await loadAnnouncements()
     } catch (error) {
-      console.error('Error toggling like:', error)
+      console.error('Error toggling join:', error)
+    }
+  }
+
+  const handleAnonJoin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!showJoinModal || !joinName.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('announcement_likes')
+        .insert({
+          announcement_id: showJoinModal,
+          user_id: null,
+          participant_name: joinName.trim(),
+          participant_email: joinEmail.trim() || null,
+        })
+
+      if (error) throw error
+
+      // ローカルストレージに保存
+      addAnonLike(showJoinModal)
+      setAnonLikedAnnouncements([...anonLikedAnnouncements, showJoinModal])
+      setShowJoinModal(null)
+      setJoinName('')
+      setJoinEmail('')
+
+      await loadAnnouncements()
+    } catch (error) {
+      console.error('Error joining:', error)
+      alert('参加登録に失敗しました')
     }
   }
 
@@ -414,7 +446,7 @@ export default function AnnouncementsPage() {
                   <div className="flex items-center gap-4 flex-wrap">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleLike(announcement.id, announcement.user_has_liked)}
+                        onClick={() => handleJoinClick(announcement.id, announcement.user_has_liked)}
                         className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           announcement.user_has_liked
                             ? 'bg-indigo-600 text-white hover:bg-indigo-700'
@@ -500,25 +532,37 @@ export default function AnnouncementsPage() {
                 <p className="text-gray-500 text-center py-4">参加者はいません</p>
               ) : (
                 <div className="space-y-3">
-                  {showLikesModal.liked_users.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                          {user.full_name?.charAt(0) || 'U'}
+                  {showLikesModal.liked_users.map((user, index) => {
+                    const isAnon = !user.id && user.participant_name
+                    return (
+                      <div
+                        key={user.id || `anon-${index}`}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                            isAnon
+                              ? 'bg-gray-200 text-gray-500'
+                              : 'bg-indigo-100 text-indigo-600'
+                          }`}>
+                            {user.full_name?.charAt(0) || 'U'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-gray-900">{user.full_name}</p>
+                              {isAnon && (
+                                <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">ゲスト</span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-500">{user.email || '—'}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{user.full_name}</p>
-                          <p className="text-sm text-gray-500">{user.email}</p>
-                        </div>
+                        <p className="text-xs text-gray-400">
+                          {formatDate(user.created_at)}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-400">
-                        {formatDate(user.created_at)}
-                      </p>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -530,6 +574,77 @@ export default function AnnouncementsPage() {
                 閉じる
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Anonymous Join Modal */}
+      {showJoinModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">参加登録</h2>
+                <button
+                  onClick={() => {
+                    setShowJoinModal(null)
+                    setJoinName('')
+                    setJoinEmail('')
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6 text-gray-500" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">参加するにはお名前を入力してください</p>
+            </div>
+            <form onSubmit={handleAnonJoin} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  お名前 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={joinName}
+                  onChange={(e) => setJoinName(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="お名前を入力"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  メールアドレス <span className="text-gray-400 text-xs">（任意）</span>
+                </label>
+                <input
+                  type="email"
+                  value={joinEmail}
+                  onChange={(e) => setJoinEmail(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="example@email.com"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowJoinModal(null)
+                    setJoinName('')
+                    setJoinEmail('')
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  disabled={!joinName.trim()}
+                  className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  参加する
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
