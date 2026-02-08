@@ -15,7 +15,7 @@ const menuItems = [
   { icon: Calendar, label: '全体告知', href: '/announcements', requiresAuth: false },
   { icon: MessageSquare, label: '掲示板', href: '/board', requiresAuth: false },
   { icon: Users, label: '言語パートナー', href: '/teacher', requiresAuth: true, teacherHref: '/teacher', studentHref: '/student' },
-  { icon: User, label: 'プロフィール', href: '/student', requiresAuth: true },
+  { icon: User, label: 'プロフィール', href: '/student', requiresAuth: true, roleRequired: 'student' as const },
 ]
 
 export default function Sidebar({ profile, isOpen = true, onClose }: SidebarProps) {
@@ -57,6 +57,8 @@ export default function Sidebar({ profile, isOpen = true, onClose }: SidebarProp
             {menuItems.map((item) => {
               // 認証が必要な項目で未ログインの場合はスキップ
               if (item.requiresAuth && !profile) return null
+              // 特定ロールが必要な項目でロールが一致しない場合はスキップ
+              if (item.roleRequired && profile?.role !== item.roleRequired) return null
 
               const href = getHref(item)
               const isActive = pathname === href
