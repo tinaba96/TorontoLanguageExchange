@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
+import { AlertTriangle, Check, X } from 'lucide-react'
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -176,15 +176,10 @@ export default function SettingsPage() {
     }
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">読み込み中...</div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-xl text-gray-600">読み込み中...</div>
       </div>
     )
   }
@@ -194,136 +189,107 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-600">管理者設定</h1>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/announcements"
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              全体告知
-            </Link>
-            <Link
-              href="/board"
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              掲示板
-            </Link>
-            <Link
-              href={profile?.role === 'teacher' ? '/teacher' : '/student'}
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              {profile?.role === 'teacher' ? '先生マッチング' : 'プロフィール'}
-            </Link>
-            <Link
-              href="/messages"
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              メッセージ
-            </Link>
-            <span className="text-gray-700 font-medium">{profile?.full_name}</span>
-            <button
-              onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              ログアウト
-            </button>
-          </div>
-        </div>
-      </nav>
+    <div className="max-w-2xl mx-auto">
+      {/* ページヘッダー */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">管理者設定</h1>
+        <p className="text-gray-600 mt-1">システム全体の設定を管理します</p>
+      </div>
 
-      {/* Main Content */}
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">登録用合言葉の設定</h2>
-
-          {message && (
-            <div
-              className={`mb-6 px-4 py-3 rounded ${
-                message.type === 'success'
-                  ? 'bg-green-50 border border-green-200 text-green-700'
-                  : 'bg-red-50 border border-red-200 text-red-700'
-              }`}
-            >
-              {message.text}
-            </div>
+      {/* メッセージ表示 */}
+      {message && (
+        <div
+          className={`mb-6 px-4 py-3 rounded-lg flex items-start gap-3 ${
+            message.type === 'success'
+              ? 'bg-green-50 border border-green-200 text-green-700'
+              : 'bg-red-50 border border-red-200 text-red-700'
+          }`}
+        >
+          {message.type === 'success' ? (
+            <Check className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          ) : (
+            <X className="w-5 h-5 flex-shrink-0 mt-0.5" />
           )}
-
-          <form onSubmit={handleUpdatePassphrase} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                現在の合言葉
-              </label>
-              <p className="text-gray-900 bg-gray-100 px-4 py-2 rounded-lg font-mono">
-                {passphrase}
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="newPassphrase" className="block text-sm font-medium text-gray-700 mb-2">
-                新しい合言葉
-              </label>
-              <input
-                id="newPassphrase"
-                type="text"
-                value={newPassphrase}
-                onChange={(e) => setNewPassphrase(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="新しい合言葉を入力"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                新規登録時にユーザーが入力する合言葉です
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={saving || newPassphrase === passphrase}
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? '更新中...' : '合言葉を更新'}
-            </button>
-          </form>
+          {message.text}
         </div>
+      )}
 
-        {/* メール認証設定 */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mt-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">メール認証設定</h2>
+      {/* 合言葉設定 */}
+      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-6">登録用合言葉の設定</h2>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-900 font-medium">新規登録時のメール認証</p>
-              <p className="text-sm text-gray-500 mt-1">
-                {emailVerificationRequired
-                  ? 'ONの場合、新規ユーザーはメールの確認リンクをクリックしてからログインできます'
-                  : 'OFFの場合、新規ユーザーはメール認証なしで即座にログインできます'}
-              </p>
-            </div>
-            <button
-              onClick={handleToggleEmailVerification}
-              disabled={savingEmailVerification}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${
-                emailVerificationRequired ? 'bg-indigo-600' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  emailVerificationRequired ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800">
-              <strong>注意:</strong> この設定はSupabaseダッシュボードの「Confirm email」設定と連携して動作します。
-              Supabase側で認証メール送信が有効になっている必要があります。
+        <form onSubmit={handleUpdatePassphrase} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              現在の合言葉
+            </label>
+            <p className="text-gray-900 bg-gray-100 px-4 py-2 rounded-lg font-mono">
+              {passphrase}
             </p>
           </div>
+
+          <div>
+            <label htmlFor="newPassphrase" className="block text-sm font-medium text-gray-700 mb-2">
+              新しい合言葉
+            </label>
+            <input
+              id="newPassphrase"
+              type="text"
+              value={newPassphrase}
+              onChange={(e) => setNewPassphrase(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="新しい合言葉を入力"
+            />
+            <p className="mt-1 text-sm text-gray-500">
+              新規登録時にユーザーが入力する合言葉です
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={saving || newPassphrase === passphrase}
+            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? '更新中...' : '合言葉を更新'}
+          </button>
+        </form>
+      </div>
+
+      {/* メール認証設定 */}
+      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-6">メール認証設定</h2>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-gray-900 font-medium">新規登録時のメール認証</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {emailVerificationRequired
+                ? 'ONの場合、新規ユーザーはメールの確認リンクをクリックしてからログインできます'
+                : 'OFFの場合、新規ユーザーはメール認証なしで即座にログインできます'}
+            </p>
+          </div>
+          <button
+            onClick={handleToggleEmailVerification}
+            disabled={savingEmailVerification}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${
+              emailVerificationRequired ? 'bg-indigo-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                emailVerificationRequired ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-yellow-800">
+            <strong>注意:</strong> この設定はSupabaseダッシュボードの「Confirm email」設定と連携して動作します。
+            Supabase側で認証メール送信が有効になっている必要があります。
+          </p>
         </div>
       </div>
     </div>

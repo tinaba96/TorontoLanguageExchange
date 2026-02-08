@@ -1,11 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
 import RichTextEditor from '@/components/RichTextEditor'
+import { UserPlus, UserCheck, Pin, Clock, X, Pencil, Trash2 } from 'lucide-react'
 
 // ローカルストレージのキー
 const ANON_ANNOUNCEMENT_LIKES_KEY = 'anon_announcement_likes'
@@ -64,7 +63,6 @@ export default function AnnouncementsPage() {
   const [showLikesModal, setShowLikesModal] = useState<Announcement | null>(null)
   const [anonLikedAnnouncements, setAnonLikedAnnouncements] = useState<string[]>([])
 
-  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
@@ -314,195 +312,169 @@ export default function AnnouncementsPage() {
     }
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">読み込み中...</div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-xl text-gray-600">読み込み中...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-600">全体告知</h1>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/board"
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              掲示板
-            </Link>
-            {profile ? (
-              <>
-                <Link
-                  href={profile.role === 'teacher' ? '/teacher' : '/student'}
-                  className="text-indigo-600 hover:text-indigo-700 transition-colors"
-                >
-                  {profile.role === 'teacher' ? '先生マッチング' : 'プロフィール'}
-                </Link>
-                <Link
-                  href="/messages"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  メッセージ
-                </Link>
-                {profile.is_admin && (
-                  <Link
-                    href="/settings"
-                    className="text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    設定
-                  </Link>
-                )}
-                <span className="text-gray-700 font-medium">{profile.full_name}</span>
-                <button
-                  onClick={handleLogout}
-                  className="text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  ログアウト
-                </button>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                ログイン
-              </Link>
-            )}
-          </div>
+    <div className="max-w-4xl mx-auto">
+      {/* ページヘッダー */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">全体告知</h1>
+        <p className="text-gray-600 mt-1">運営からのお知らせをお届けします</p>
+      </div>
+
+      {/* 投稿作成ボタン（管理者のみ） */}
+      {profile?.is_admin && (
+        <div className="mb-6">
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="w-full bg-white rounded-lg shadow p-4 text-left text-gray-500 hover:text-gray-700 hover:shadow-md transition-all border border-gray-200"
+          >
+            新しい告知を作成...
+          </button>
         </div>
-      </nav>
+      )}
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Create Button (Admin only) */}
-        {profile?.is_admin && (
-          <div className="mb-6">
-            <button
-              onClick={() => setShowNewModal(true)}
-              className="w-full bg-white rounded-lg shadow p-4 text-left text-gray-500 hover:text-gray-700 hover:shadow-md transition-all"
-            >
-              新しい告知を作成...
-            </button>
+      {/* 告知リスト（横長カード） */}
+      <div className="space-y-4">
+        {announcements.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center text-gray-600">
+            まだ告知がありません。
           </div>
-        )}
+        ) : (
+          announcements.map((announcement) => (
+            <div
+              key={announcement.id}
+              className={`bg-white rounded-lg shadow hover:shadow-lg transition-shadow border ${
+                announcement.is_pinned ? 'border-yellow-300' : 'border-gray-200'
+              }`}
+            >
+              <div className="flex flex-col md:flex-row">
+                {/* 左側: 画像エリア（プレースホルダー） */}
+                <div className={`w-full md:w-48 h-32 md:h-auto flex items-center justify-center rounded-t-lg md:rounded-l-lg md:rounded-tr-none flex-shrink-0 ${
+                  announcement.is_pinned
+                    ? 'bg-gradient-to-br from-yellow-100 to-orange-100'
+                    : 'bg-gradient-to-br from-blue-100 to-indigo-100'
+                }`}>
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl ${
+                    announcement.is_pinned
+                      ? 'bg-yellow-200 text-yellow-700'
+                      : 'bg-indigo-200 text-indigo-600'
+                  }`}>
+                    {announcement.author?.full_name?.charAt(0) || 'U'}
+                  </div>
+                </div>
 
-        {/* Announcements List */}
-        <div className="space-y-4">
-          {announcements.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-600">
-              まだ告知がありません。
-            </div>
-          ) : (
-            announcements.map((announcement) => (
-              <div
-                key={announcement.id}
-                className={`bg-white rounded-lg shadow hover:shadow-lg transition-shadow ${
-                  announcement.is_pinned ? 'border-l-4 border-yellow-500' : ''
-                }`}
-              >
-                <div className="p-6">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                        {announcement.author?.full_name?.charAt(0) || 'U'}
-                      </div>
-                      <div className="ml-3">
-                        <p className="font-semibold text-gray-900">
-                          {announcement.author?.full_name || '名前未設定'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {new Date(announcement.created_at).toLocaleString('ja-JP')}
-                        </p>
+                {/* 右側: コンテンツ */}
+                <div className="flex-1 p-5">
+                  {/* タイトルと作者 */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      {announcement.is_pinned && (
+                        <span className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-semibold">
+                          <Pin className="w-3 h-3" />
+                          固定
+                        </span>
+                      )}
+                      <h3 className="text-lg font-bold text-gray-900">{announcement.title}</h3>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <span className="font-medium">{announcement.author?.full_name || '名前未設定'}</span>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{formatDate(announcement.created_at)}</span>
                       </div>
                     </div>
-                    {announcement.is_pinned && (
-                      <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
-                        固定
-                      </span>
-                    )}
                   </div>
 
-                  {/* Content */}
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{announcement.title}</h3>
+                  {/* 内容（2行で切り捨て） */}
                   <div
-                    className="text-gray-700 prose prose-sm max-w-none"
+                    className="text-gray-700 mb-4 line-clamp-2 prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: announcement.content }}
                   />
 
-                  {/* Like Button */}
-                  <div className="flex items-center gap-4 mt-4 pt-4 border-t">
+                  {/* アクションボタン */}
+                  <div className="flex items-center gap-4 flex-wrap">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleLike(announcement.id, announcement.user_has_liked)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           announcement.user_has_liked
-                            ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            : 'bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100'
                         }`}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill={announcement.user_has_liked ? 'currentColor' : 'none'}
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          className="w-5 h-5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
-                          />
-                        </svg>
-                        <span className="text-sm font-medium">
-                          {announcement.likes_count > 0 ? announcement.likes_count : 'いいね'}
+                        {announcement.user_has_liked ? (
+                          <UserCheck className="w-4 h-4" />
+                        ) : (
+                          <UserPlus className="w-4 h-4" />
+                        )}
+                        <span>
+                          {announcement.user_has_liked ? '参加済み' : '参加する'}
                         </span>
+                        {announcement.likes_count > 0 && (
+                          <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${
+                            announcement.user_has_liked
+                              ? 'bg-white/20'
+                              : 'bg-indigo-100'
+                          }`}>
+                            {announcement.likes_count}
+                          </span>
+                        )}
                       </button>
-                      {/* Admin: View likes list */}
+                      {/* Admin: View participants list */}
                       {profile?.is_admin && announcement.likes_count > 0 && (
                         <button
                           onClick={() => setShowLikesModal(announcement)}
                           className="text-indigo-600 hover:text-indigo-700 text-sm font-medium underline"
                         >
-                          一覧を見る
+                          参加者一覧
                         </button>
                       )}
                     </div>
 
                     {/* Actions (Admin only) */}
                     {profile?.is_admin && (
-                      <>
+                      <div className="flex items-center gap-2 ml-auto">
                         <button
                           onClick={() => openEditModal(announcement)}
-                          className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                         >
+                          <Pencil className="w-4 h-4" />
                           編集
                         </button>
                         <button
                           onClick={() => handleDelete(announcement.id)}
-                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                         >
+                          <Trash2 className="w-4 h-4" />
                           削除
                         </button>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Likes List Modal (Admin only) */}
@@ -512,20 +484,20 @@ export default function AnnouncementsPage() {
             <div className="p-6 border-b">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold text-gray-900">
-                  いいねしたユーザー ({showLikesModal.likes_count}人)
+                  参加者一覧 ({showLikesModal.likes_count}人)
                 </h2>
                 <button
                   onClick={() => setShowLikesModal(null)}
-                  className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  ×
+                  <X className="w-6 h-6 text-gray-500" />
                 </button>
               </div>
               <p className="text-sm text-gray-500 mt-1">{showLikesModal.title}</p>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               {showLikesModal.liked_users.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">いいねしたユーザーはいません</p>
+                <p className="text-gray-500 text-center py-4">参加者はいません</p>
               ) : (
                 <div className="space-y-3">
                   {showLikesModal.liked_users.map((user) => (
@@ -543,7 +515,7 @@ export default function AnnouncementsPage() {
                         </div>
                       </div>
                       <p className="text-xs text-gray-400">
-                        {new Date(user.created_at).toLocaleString('ja-JP')}
+                        {formatDate(user.created_at)}
                       </p>
                     </div>
                   ))}
@@ -573,9 +545,9 @@ export default function AnnouncementsPage() {
                 </h2>
                 <button
                   onClick={closeModal}
-                  className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  ×
+                  <X className="w-6 h-6 text-gray-500" />
                 </button>
               </div>
             </div>

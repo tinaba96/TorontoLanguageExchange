@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type {
   Profile,
   MatchWithProfiles,
   MessageWithSender,
 } from "@/lib/types/database.types";
+import { Send } from "lucide-react";
 
 export default function MessagesPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -44,14 +44,11 @@ export default function MessagesPage() {
             table: "messages",
             filter: `match_id=eq.${selectedMatch.id}`,
           },
-          (payload) => {
-            console.log("🔔 New message received:", payload);
+          () => {
             loadMessages(selectedMatch.id);
           }
         )
-        .subscribe((status) => {
-          console.log("📡 Realtime subscription status:", status);
-        });
+        .subscribe();
 
       return () => {
         supabase.removeChannel(channel);
@@ -188,15 +185,10 @@ export default function MessagesPage() {
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
-      alert("メッセージの送信に失敗しました。再度お試しくださいませ。");
+      alert("メッセージの送信に失敗しました。再度お試しください。");
     } finally {
       setSending(false);
     }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
   };
 
   const getOtherUser = (match: MatchWithProfiles) => {
@@ -206,199 +198,161 @@ export default function MessagesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">読み込み中...</div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-xl text-gray-600">読み込み中...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-600">メッセージ</h1>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/announcements"
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              全体告知
-            </Link>
-            <Link
-              href="/board"
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              掲示板
-            </Link>
-            <Link
-              href={profile?.role === "teacher" ? "/teacher" : "/student"}
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              {profile?.role === "teacher" ? "先生マッチング" : "プロフィール"}
-            </Link>
-            {profile?.is_admin && (
-              <Link
-                href="/settings"
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                設定
-              </Link>
-            )}
-            <span className="text-gray-700 font-medium">
-              {profile?.full_name}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              ログアウト
-            </button>
-          </div>
+    <div className="max-w-6xl mx-auto">
+      {/* ページヘッダー */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">メッセージ</h1>
+        <p className="text-gray-600 mt-1">マッチングした相手とメッセージを交換しましょう</p>
+      </div>
+
+      {matches.length === 0 ? (
+        <div className="bg-white rounded-lg shadow p-8 text-center text-gray-600 border border-gray-200">
+          まだマッチングがありません
         </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto px-4 py-6 h-[calc(100vh-80px)]">
-        {matches.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center text-gray-600">
-            まだマッチングがありません
-          </div>
-        ) : (
-          <div className="grid grid-cols-12 gap-4 h-full">
-            {/* マッチング一覧 */}
-            <div className="col-span-12 md:col-span-4 bg-white rounded-lg shadow overflow-y-auto">
-              <div className="p-4 border-b">
-                <h2 className="font-semibold text-gray-900">マッチング一覧</h2>
-              </div>
-              <div className="divide-y">
-                {matches.map((match) => {
-                  const otherUser = getOtherUser(match);
-                  return (
-                    <button
-                      key={match.id}
-                      onClick={() => setSelectedMatch(match)}
-                      className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
-                        selectedMatch?.id === match.id ? "bg-indigo-50" : ""
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                          {otherUser?.full_name?.charAt(0) || "U"}
-                        </div>
-                        <div className="ml-3 flex-1">
-                          <p className="font-semibold text-gray-900">
-                            {otherUser?.full_name || "名前未設定"}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {profile?.id === match.teacher_id ? "生徒" : "先生"}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+      ) : (
+        <div className="grid grid-cols-12 gap-4 h-[calc(100vh-220px)]">
+          {/* マッチング一覧 */}
+          <div className="col-span-12 md:col-span-4 bg-white rounded-lg shadow border border-gray-200 overflow-hidden flex flex-col">
+            <div className="p-4 border-b">
+              <h2 className="font-semibold text-gray-900">マッチング一覧</h2>
             </div>
-
-            {/* メッセージエリア */}
-            <div className="col-span-12 md:col-span-8 bg-white rounded-lg shadow flex flex-col">
-              {selectedMatch ? (
-                <>
-                  {/* ヘッダー */}
-                  <div className="p-4 border-b">
+            <div className="flex-1 overflow-y-auto divide-y">
+              {matches.map((match) => {
+                const otherUser = getOtherUser(match);
+                return (
+                  <button
+                    key={match.id}
+                    onClick={() => setSelectedMatch(match)}
+                    className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                      selectedMatch?.id === match.id ? "bg-indigo-50" : ""
+                    }`}
+                  >
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                        {getOtherUser(selectedMatch)?.full_name?.charAt(0) ||
-                          "U"}
+                        {otherUser?.full_name?.charAt(0) || "U"}
                       </div>
-                      <div className="ml-3">
+                      <div className="ml-3 flex-1">
                         <p className="font-semibold text-gray-900">
-                          {getOtherUser(selectedMatch)?.full_name ||
-                            "名前未設定"}
+                          {otherUser?.full_name || "名前未設定"}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {profile?.id === selectedMatch.teacher_id
-                            ? "生徒"
-                            : "先生"}
+                          {profile?.id === match.teacher_id ? "生徒" : "先生"}
                         </p>
                       </div>
                     </div>
-                  </div>
-
-                  {/* メッセージ一覧 */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {messages.length === 0 ? (
-                      <div className="text-center text-gray-500 mt-8">
-                        メッセージを送信してみましょう
-                      </div>
-                    ) : (
-                      messages.map((message) => {
-                        const isOwnMessage = message.sender_id === profile?.id;
-                        return (
-                          <div
-                            key={message.id}
-                            className={`flex ${
-                              isOwnMessage ? "justify-end" : "justify-start"
-                            }`}
-                          >
-                            <div
-                              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                                isOwnMessage
-                                  ? "bg-indigo-600 text-white"
-                                  : "bg-gray-200 text-gray-900"
-                              }`}
-                            >
-                              <p className="text-sm">{message.content}</p>
-                              <p
-                                className={`text-xs mt-1 ${
-                                  isOwnMessage
-                                    ? "text-indigo-200"
-                                    : "text-gray-500"
-                                }`}
-                              >
-                                {new Date(
-                                  message.created_at
-                                ).toLocaleTimeString("ja-JP", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
-
-                  {/* メッセージ入力 */}
-                  <form onSubmit={handleSendMessage} className="p-4 border-t">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="メッセージを入力..."
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
-                      <button
-                        type="submit"
-                        disabled={sending || !newMessage.trim()}
-                        className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        送信
-                      </button>
-                    </div>
-                  </form>
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-gray-500">
-                  マッチングを選択してください
-                </div>
-              )}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
-      </div>
+
+          {/* メッセージエリア */}
+          <div className="col-span-12 md:col-span-8 bg-white rounded-lg shadow border border-gray-200 flex flex-col overflow-hidden">
+            {selectedMatch ? (
+              <>
+                {/* ヘッダー */}
+                <div className="p-4 border-b">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                      {getOtherUser(selectedMatch)?.full_name?.charAt(0) ||
+                        "U"}
+                    </div>
+                    <div className="ml-3">
+                      <p className="font-semibold text-gray-900">
+                        {getOtherUser(selectedMatch)?.full_name ||
+                          "名前未設定"}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {profile?.id === selectedMatch.teacher_id
+                          ? "生徒"
+                          : "先生"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* メッセージ一覧 */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {messages.length === 0 ? (
+                    <div className="text-center text-gray-500 mt-8">
+                      メッセージを送信してみましょう
+                    </div>
+                  ) : (
+                    messages.map((message) => {
+                      const isOwnMessage = message.sender_id === profile?.id;
+                      return (
+                        <div
+                          key={message.id}
+                          className={`flex ${
+                            isOwnMessage ? "justify-end" : "justify-start"
+                          }`}
+                        >
+                          <div
+                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                              isOwnMessage
+                                ? "bg-indigo-600 text-white"
+                                : "bg-gray-200 text-gray-900"
+                            }`}
+                          >
+                            <p className="text-sm">{message.content}</p>
+                            <p
+                              className={`text-xs mt-1 ${
+                                isOwnMessage
+                                  ? "text-indigo-200"
+                                  : "text-gray-500"
+                              }`}
+                            >
+                              {new Date(
+                                message.created_at
+                              ).toLocaleTimeString("ja-JP", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* メッセージ入力 */}
+                <form onSubmit={handleSendMessage} className="p-4 border-t">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="メッセージを入力..."
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                    <button
+                      type="submit"
+                      disabled={sending || !newMessage.trim()}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span className="hidden sm:inline">送信</span>
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-gray-500">
+                マッチングを選択してください
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
+import { Heart, MessageCircle, Clock, X } from 'lucide-react'
 
 interface Post {
   id: string
@@ -68,7 +67,6 @@ export default function BulletinBoardPage() {
   const [submitting, setSubmitting] = useState(false)
   const [anonLikedPosts, setAnonLikedPosts] = useState<string[]>([])
 
-  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
@@ -353,139 +351,107 @@ export default function BulletinBoardPage() {
     }
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">読み込み中...</div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-xl text-gray-600">読み込み中...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-600">掲示板</h1>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/announcements"
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              全体告知
-            </Link>
-            {profile ? (
-              <>
-                <Link
-                  href={profile.role === 'teacher' ? '/teacher' : '/student'}
-                  className="text-indigo-600 hover:text-indigo-700 transition-colors"
-                >
-                  {profile.role === 'teacher' ? '先生マッチング' : 'プロフィール'}
-                </Link>
-                <Link
-                  href="/messages"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  メッセージ
-                </Link>
-                {profile.is_admin && (
-                  <Link
-                    href="/settings"
-                    className="text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    設定
-                  </Link>
-                )}
-                <span className="text-gray-700 font-medium">{profile.full_name}</span>
-                <button
-                  onClick={handleLogout}
-                  className="text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  ログアウト
-                </button>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                ログイン
-              </Link>
-            )}
+    <div className="max-w-4xl mx-auto">
+      {/* ページヘッダー */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">掲示板</h1>
+        <p className="text-gray-600 mt-1">みんなで情報をシェアしましょう</p>
+      </div>
+
+      {/* 投稿作成ボタン */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowNewPostModal(true)}
+          className="w-full bg-white rounded-lg shadow p-4 text-left text-gray-500 hover:text-gray-700 hover:shadow-md transition-all border border-gray-200"
+        >
+          今日はどんなことをシェアしますか？
+        </button>
+      </div>
+
+      {/* 投稿リスト（横長カード） */}
+      <div className="space-y-4">
+        {posts.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center text-gray-600">
+            まだ投稿がありません。最初の投稿をしてみましょう！
           </div>
-        </div>
-      </nav>
+        ) : (
+          posts.map((post) => (
+            <div
+              key={post.id}
+              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200"
+            >
+              <div className="flex flex-col md:flex-row">
+                {/* 左側: 画像エリア（プレースホルダー） */}
+                <div className="w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center rounded-t-lg md:rounded-l-lg md:rounded-tr-none flex-shrink-0">
+                  <div className="w-16 h-16 bg-indigo-200 rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl">
+                    {(post.author_name || post.author?.full_name || 'U').charAt(0)}
+                  </div>
+                </div>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Create Post Button */}
-        <div className="mb-6">
-          <button
-            onClick={() => setShowNewPostModal(true)}
-            className="w-full bg-white rounded-lg shadow p-4 text-left text-gray-500 hover:text-gray-700 hover:shadow-md transition-all"
-          >
-            今日はどんなことをシェアしますか？
-          </button>
-        </div>
-
-        {/* Posts List */}
-        <div className="space-y-4">
-          {posts.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-600">
-              まだ投稿がありません。最初の投稿をしてみましょう！
-            </div>
-          ) : (
-            posts.map((post) => (
-              <div key={post.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  {/* Author Info */}
-                  <div className="flex items-center mb-4">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                      {(post.author_name || post.author?.full_name || 'U').charAt(0)}
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-semibold text-gray-900">{post.author_name || post.author?.full_name || '名前未設定'}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(post.created_at).toLocaleString('ja-JP')}
-                      </p>
+                {/* 右側: コンテンツ */}
+                <div className="flex-1 p-5">
+                  {/* タイトルと作者 */}
+                  <div className="mb-3">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">{post.title}</h3>
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <span className="font-medium">{post.author_name || post.author?.full_name || '名前未設定'}</span>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{formatDate(post.created_at)}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Post Content */}
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{post.title}</h3>
-                  <p className="text-gray-700 mb-4 whitespace-pre-wrap">{post.content}</p>
+                  {/* 内容（2行で切り捨て） */}
+                  <p className="text-gray-700 mb-4 line-clamp-2">{post.content}</p>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-6 pt-4 border-t">
+                  {/* アクションボタン */}
+                  <div className="flex items-center gap-4">
                     <button
                       onClick={() => handleLikeToggle(post)}
-                      className={`flex items-center gap-2 transition-colors ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors ${
                         post.user_has_liked
-                          ? 'text-red-600 hover:text-red-700'
-                          : 'text-gray-600 hover:text-red-600'
+                          ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      <span className="text-xl">{post.user_has_liked ? '❤️' : '🤍'}</span>
-                      <span className="font-semibold">{post.likes_count}</span>
+                      <Heart className={`w-4 h-4 ${post.user_has_liked ? 'fill-current' : ''}`} />
+                      <span className="font-medium">{post.likes_count}</span>
                     </button>
                     <button
                       onClick={() => setSelectedPost(post)}
-                      className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                     >
-                      <span className="text-xl">💬</span>
-                      <span className="font-semibold">{post.comments_count}</span>
+                      <MessageCircle className="w-4 h-4" />
+                      <span className="font-medium">{post.comments_count}</span>
                     </button>
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* New Post Modal */}
@@ -497,9 +463,9 @@ export default function BulletinBoardPage() {
                 <h2 className="text-2xl font-bold text-gray-900">新しい投稿</h2>
                 <button
                   onClick={() => setShowNewPostModal(false)}
-                  className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  ×
+                  <X className="w-6 h-6 text-gray-500" />
                 </button>
               </div>
             </div>
@@ -573,9 +539,9 @@ export default function BulletinBoardPage() {
                 <h2 className="text-2xl font-bold text-gray-900">{selectedPost.title}</h2>
                 <button
                   onClick={() => setSelectedPost(null)}
-                  className="text-gray-500 hover:text-gray-700 text-3xl leading-none"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  ×
+                  <X className="w-6 h-6 text-gray-500" />
                 </button>
               </div>
             </div>
@@ -590,7 +556,7 @@ export default function BulletinBoardPage() {
                   <div className="ml-3">
                     <p className="font-semibold text-gray-900">{selectedPost.author_name || selectedPost.author?.full_name || '名前未設定'}</p>
                     <p className="text-sm text-gray-500">
-                      {new Date(selectedPost.created_at).toLocaleString('ja-JP')}
+                      {formatDate(selectedPost.created_at)}
                     </p>
                   </div>
                 </div>
@@ -646,7 +612,7 @@ export default function BulletinBoardPage() {
                               {comment.author_name || comment.author?.full_name || '名前未設定'}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {new Date(comment.created_at).toLocaleString('ja-JP')}
+                              {formatDate(comment.created_at)}
                             </p>
                           </div>
                         </div>

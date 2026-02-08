@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, StudentWithProfile } from "@/lib/types/database.types";
+import { X, MapPin, Clock, Target, Sparkles, User } from "lucide-react";
 
 export default function TeacherDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -129,11 +129,6 @@ export default function TeacherDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-  };
-
   const getLevelBadge = (level: string | null) => {
     const levels = {
       beginner: { label: "初級", color: "bg-green-100 text-green-800" },
@@ -150,192 +145,152 @@ export default function TeacherDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">読み込み中...</div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-xl text-gray-600">読み込み中...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-600">先生マッチング</h1>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/announcements"
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              全体告知
-            </Link>
-            <Link
-              href="/board"
-              className="text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              掲示板
-            </Link>
-            <Link
-              href="/messages"
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              メッセージ
-            </Link>
-            {profile?.is_admin && (
-              <Link
-                href="/settings"
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                設定
-              </Link>
-            )}
-            <span className="text-gray-700 font-medium">{profile?.full_name}</span>
-            <button
-              onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              ログアウト
-            </button>
-          </div>
-        </div>
-      </nav>
+    <div className="max-w-7xl mx-auto">
+      {/* ページヘッダー */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">先生マッチング</h1>
+        <p className="text-gray-600 mt-1">
+          {students.length > 0
+            ? `${students.length}名の生徒が見つかりました`
+            : "現在、マッチング可能な生徒はいません"
+          }
+        </p>
+      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">生徒一覧</h2>
-          <p className="text-gray-600">
-            {students.length > 0
-              ? `${students.length}名の生徒が見つかりました`
-              : "現在、マッチング可能な生徒はいません"
-            }
-          </p>
+      {students.length === 0 ? (
+        <div className="bg-white rounded-lg shadow p-12 text-center border border-gray-200">
+          <div className="text-6xl mb-4">📚</div>
+          <p className="text-xl text-gray-600 mb-2">現在、マッチング可能な生徒はいません</p>
+          <p className="text-gray-500">新しい生徒が登録されるまでお待ちください</p>
         </div>
-
-        {students.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <div className="text-6xl mb-4">📚</div>
-            <p className="text-xl text-gray-600 mb-2">現在、マッチング可能な生徒はいません</p>
-            <p className="text-gray-500">新しい生徒が登録されるまでお待ちください</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {students.map((student) => (
-              <div
-                key={student.id}
-                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
-              >
-                {/* Header */}
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
-                  <div className="flex items-center mb-3">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl shadow-lg">
-                      {student.full_name?.charAt(0) || "S"}
-                    </div>
-                    <div className="ml-4">
-                      <h3 className="font-bold text-xl">
-                        {student.full_name || "名前未設定"}
-                      </h3>
-                      <p className="text-indigo-100 text-sm">{student.email}</p>
-                    </div>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {students.map((student) => (
+            <div
+              key={student.id}
+              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200"
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
+                <div className="flex items-center mb-3">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl shadow-lg">
+                    {student.full_name?.charAt(0) || "S"}
                   </div>
-                  <div className="flex justify-start">
-                    {getLevelBadge(student.student_profile?.japanese_level || null)}
+                  <div className="ml-4">
+                    <h3 className="font-bold text-xl">
+                      {student.full_name || "名前未設定"}
+                    </h3>
+                    <p className="text-indigo-100 text-sm">{student.email}</p>
                   </div>
                 </div>
-
-                {/* Content */}
-                <div className="p-6 space-y-4">
-                  {/* 自己紹介 */}
-                  {student.student_profile?.bio ? (
-                    <div>
-                      <div className="flex items-center mb-2">
-                        <span className="text-lg mr-2">👤</span>
-                        <h4 className="text-sm font-bold text-gray-700">自己紹介</h4>
-                      </div>
-                      <p className="text-sm text-gray-600 line-clamp-3 pl-7">
-                        {student.student_profile.bio}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-400 pl-7">自己紹介が未設定です</div>
-                  )}
-
-                  {/* 学習目標 */}
-                  {student.student_profile?.learning_goals ? (
-                    <div>
-                      <div className="flex items-center mb-2">
-                        <span className="text-lg mr-2">🎯</span>
-                        <h4 className="text-sm font-bold text-gray-700">学習目標</h4>
-                      </div>
-                      <p className="text-sm text-gray-600 line-clamp-3 pl-7">
-                        {student.student_profile.learning_goals}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-400 pl-7">学習目標が未設定です</div>
-                  )}
-
-                  {/* 理想の先生像 */}
-                  {student.student_profile?.desired_teacher_type ? (
-                    <div>
-                      <div className="flex items-center mb-2">
-                        <span className="text-lg mr-2">✨</span>
-                        <h4 className="text-sm font-bold text-gray-700">理想の先生像</h4>
-                      </div>
-                      <p className="text-sm text-gray-600 line-clamp-2 pl-7">
-                        {student.student_profile.desired_teacher_type}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-400 pl-7">理想の先生像が未設定です</div>
-                  )}
-
-                  {/* ロケーションと時間帯 */}
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {student.student_profile?.location ? (
-                      <span className="inline-flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
-                        📍 {student.student_profile.location}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center bg-gray-50 text-gray-400 px-3 py-1 rounded-full text-xs">
-                        📍 場所未設定
-                      </span>
-                    )}
-                    {student.student_profile?.availability ? (
-                      <span className="inline-flex items-center bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
-                        🕐 {student.student_profile.availability}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center bg-gray-50 text-gray-400 px-3 py-1 rounded-full text-xs">
-                        🕐 時間未設定
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 pb-6">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setSelectedStudent(student)}
-                      className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-                    >
-                      詳細を見る
-                    </button>
-                    <button
-                      onClick={() => handleMatch(student.id)}
-                      disabled={matchingStudentId === student.id}
-                      className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {matchingStudentId === student.id ? "処理中..." : "教える"}
-                    </button>
-                  </div>
+                <div className="flex justify-start">
+                  {getLevelBadge(student.student_profile?.japanese_level || null)}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                {/* 自己紹介 */}
+                {student.student_profile?.bio ? (
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <User className="w-4 h-4 mr-2 text-gray-500" />
+                      <h4 className="text-sm font-bold text-gray-700">自己紹介</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-3 pl-6">
+                      {student.student_profile.bio}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-400 pl-6">自己紹介が未設定です</div>
+                )}
+
+                {/* 学習目標 */}
+                {student.student_profile?.learning_goals ? (
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <Target className="w-4 h-4 mr-2 text-gray-500" />
+                      <h4 className="text-sm font-bold text-gray-700">学習目標</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-3 pl-6">
+                      {student.student_profile.learning_goals}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-400 pl-6">学習目標が未設定です</div>
+                )}
+
+                {/* 理想の先生像 */}
+                {student.student_profile?.desired_teacher_type ? (
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <Sparkles className="w-4 h-4 mr-2 text-gray-500" />
+                      <h4 className="text-sm font-bold text-gray-700">理想の先生像</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-2 pl-6">
+                      {student.student_profile.desired_teacher_type}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-400 pl-6">理想の先生像が未設定です</div>
+                )}
+
+                {/* ロケーションと時間帯 */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {student.student_profile?.location ? (
+                    <span className="inline-flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                      <MapPin className="w-3 h-3 mr-1" />
+                      {student.student_profile.location}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center bg-gray-50 text-gray-400 px-3 py-1 rounded-full text-xs">
+                      <MapPin className="w-3 h-3 mr-1" />
+                      場所未設定
+                    </span>
+                  )}
+                  {student.student_profile?.availability ? (
+                    <span className="inline-flex items-center bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {student.student_profile.availability}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center bg-gray-50 text-gray-400 px-3 py-1 rounded-full text-xs">
+                      <Clock className="w-3 h-3 mr-1" />
+                      時間未設定
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 pb-6">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedStudent(student)}
+                    className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                  >
+                    詳細を見る
+                  </button>
+                  <button
+                    onClick={() => handleMatch(student.id)}
+                    disabled={matchingStudentId === student.id}
+                    className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {matchingStudentId === student.id ? "処理中..." : "教える"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Student Detail Modal */}
       {selectedStudent && (
@@ -357,9 +312,9 @@ export default function TeacherDashboard() {
                 </div>
                 <button
                   onClick={() => setSelectedStudent(null)}
-                  className="text-white hover:text-gray-200 text-3xl leading-none"
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                 >
-                  ×
+                  <X className="w-6 h-6" />
                 </button>
               </div>
               <div className="mt-4">
@@ -371,7 +326,7 @@ export default function TeacherDashboard() {
             <div className="p-6 space-y-6">
               <div>
                 <h3 className="flex items-center text-lg font-bold text-gray-900 mb-3">
-                  <span className="text-2xl mr-2">👤</span>
+                  <User className="w-5 h-5 mr-2 text-indigo-600" />
                   自己紹介
                 </h3>
                 <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
@@ -381,7 +336,7 @@ export default function TeacherDashboard() {
 
               <div>
                 <h3 className="flex items-center text-lg font-bold text-gray-900 mb-3">
-                  <span className="text-2xl mr-2">🎯</span>
+                  <Target className="w-5 h-5 mr-2 text-indigo-600" />
                   学習目標
                 </h3>
                 <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
@@ -391,7 +346,7 @@ export default function TeacherDashboard() {
 
               <div>
                 <h3 className="flex items-center text-lg font-bold text-gray-900 mb-3">
-                  <span className="text-2xl mr-2">✨</span>
+                  <Sparkles className="w-5 h-5 mr-2 text-indigo-600" />
                   理想の先生像
                 </h3>
                 <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
@@ -402,7 +357,7 @@ export default function TeacherDashboard() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="flex items-center text-lg font-bold text-gray-900 mb-3">
-                    <span className="text-2xl mr-2">📍</span>
+                    <MapPin className="w-5 h-5 mr-2 text-indigo-600" />
                     場所
                   </h3>
                   <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
@@ -412,7 +367,7 @@ export default function TeacherDashboard() {
 
                 <div>
                   <h3 className="flex items-center text-lg font-bold text-gray-900 mb-3">
-                    <span className="text-2xl mr-2">🕐</span>
+                    <Clock className="w-5 h-5 mr-2 text-indigo-600" />
                     対応可能時間
                   </h3>
                   <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
