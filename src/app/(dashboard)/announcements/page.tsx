@@ -599,7 +599,7 @@ export default function AnnouncementsPage() {
               </div>
               <p className="text-sm text-gray-500 mt-1">
                 参加するにはお名前を入力してください。
-                <Link href="/login" className="text-indigo-600 hover:underline ml-1">ログインはこちら</Link>
+                <Link href="/login" className="text-indigo-600 hover:underline ml-1">（ログインはこちら）</Link>
               </p>
             </div>
             <form onSubmit={handleAnonJoin} className="p-6 space-y-4">
