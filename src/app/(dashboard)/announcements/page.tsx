@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
 import RichTextEditor from '@/components/RichTextEditor'
+import Link from 'next/link'
 import { UserPlus, UserCheck, Pin, Clock, X, Pencil, Trash2 } from 'lucide-react'
 
 // ローカルストレージのキー
@@ -596,7 +597,10 @@ export default function AnnouncementsPage() {
                   <X className="w-6 h-6 text-gray-500" />
                 </button>
               </div>
-              <p className="text-sm text-gray-500 mt-1">参加するにはお名前を入力してください</p>
+              <p className="text-sm text-gray-500 mt-1">
+                参加するにはお名前を入力してください。
+                <Link href="/login" className="text-indigo-600 hover:underline ml-1">ログインはこちら</Link>
+              </p>
             </div>
             <form onSubmit={handleAnonJoin} className="p-6 space-y-4">
               <div>
