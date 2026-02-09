@@ -7,8 +7,9 @@ import type {
   Profile,
   MatchWithProfiles,
   MessageWithSender,
+  AvailabilitySlot,
 } from "@/lib/types/database.types";
-import { Send } from "lucide-react";
+import { Send, ChevronDown, ChevronUp, Calendar, X } from "lucide-react";
 
 export default function MessagesPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -22,6 +23,14 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // レッスン予約関連
+  const [teacherRate, setTeacherRate] = useState<number | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<AvailabilitySlot[]>([]);
+  const [showSlots, setShowSlots] = useState(false);
+  const [selectedSlots, setSelectedSlots] = useState<AvailabilitySlot[]>([]);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [creatingBooking, setCreatingBooking] = useState(false);
+
   const router = useRouter();
   const supabase = createClient();
 
@@ -32,6 +41,7 @@ export default function MessagesPage() {
   useEffect(() => {
     if (selectedMatch) {
       loadMessages(selectedMatch.id);
+      loadTeacherInfo(selectedMatch.teacher_id);
 
       // リアルタイム更新をサブスクライブ
       const channel = supabase
@@ -143,6 +153,34 @@ export default function MessagesPage() {
     }
   };
 
+  const loadTeacherInfo = async (teacherId: string) => {
+    try {
+      // 先生のプロフィール（金額）を取得
+      const { data: teacherProfile } = await supabase
+        .from("teacher_profiles")
+        .select("hourly_rate")
+        .eq("user_id", teacherId)
+        .single();
+
+      setTeacherRate(teacherProfile?.hourly_rate ?? null);
+
+      // 空きスロットを取得
+      const { data: slotsData } = await supabase
+        .from("availability_slots")
+        .select("*")
+        .eq("teacher_id", teacherId)
+        .eq("status", "available")
+        .gte("slot_date", new Date().toISOString().split("T")[0])
+        .order("slot_date", { ascending: true })
+        .order("start_time", { ascending: true });
+
+      setAvailableSlots((slotsData as AvailabilitySlot[]) || []);
+      setShowSlots(false);
+    } catch (error) {
+      console.error("Error loading teacher info:", error);
+    }
+  };
+
   const loadMessages = async (matchId: string) => {
     try {
       const { data } = await supabase
@@ -191,10 +229,62 @@ export default function MessagesPage() {
     }
   };
 
+  const toggleSlotSelection = (slot: AvailabilitySlot) => {
+    setSelectedSlots((prev) =>
+      prev.find((s) => s.id === slot.id)
+        ? prev.filter((s) => s.id !== slot.id)
+        : [...prev, slot]
+    );
+  };
+
+  const handleBookSelectedSlots = async () => {
+    if (!profile || !selectedMatch || teacherRate === null || selectedSlots.length === 0) return;
+
+    setCreatingBooking(true);
+    try {
+      // 各スロットの予約を作成（スロットのstatusは決済完了後に更新する）
+      const inserts = selectedSlots.map((slot) => ({
+        match_id: selectedMatch.id,
+        slot_id: slot.id,
+        student_id: profile.id,
+        teacher_id: selectedMatch.teacher_id,
+        price_at_booking: teacherRate,
+      }));
+
+      const { data: bookings, error: bookingError } = await supabase
+        .from("bookings")
+        .insert(inserts as any)
+        .select();
+
+      if (bookingError) throw bookingError;
+      if (!bookings || bookings.length === 0) throw new Error("予約データが返されませんでした");
+
+      // 支払いページへリダイレクト
+      const bookingIds = (bookings as any[]).map((b) => b.id).join(",");
+      router.push(`/payment/checkout?ids=${bookingIds}`);
+    } catch (error) {
+      console.error("Error creating booking:", error);
+      alert("予約の作成に失敗しました。再度お試しください。");
+    } finally {
+      setCreatingBooking(false);
+      setShowConfirmModal(false);
+      setSelectedSlots([]);
+    }
+  };
+
   const getOtherUser = (match: MatchWithProfiles) => {
     if (!profile) return null;
     return profile.id === match.teacher_id ? match.student : match.teacher;
   };
+
+  const isStudent = profile?.role === "student";
+
+  // スロットを日付ごとにグループ化
+  const groupedSlots = availableSlots.reduce<Record<string, AvailabilitySlot[]>>((acc, slot) => {
+    if (!acc[slot.slot_date]) acc[slot.slot_date] = [];
+    acc[slot.slot_date].push(slot);
+    return acc;
+  }, {});
 
   if (loading) {
     return (
@@ -278,6 +368,103 @@ export default function MessagesPage() {
                   </div>
                 </div>
 
+                {/* レッスン情報バー（生徒側のみ表示） */}
+                {isStudent && teacherRate !== null && (
+                  <div className="border-b bg-indigo-50 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-indigo-800 font-medium">
+                        レッスン料金: ${(teacherRate / 100).toFixed(2)}/時間
+                      </span>
+                      <button
+                        onClick={() => setShowSlots(!showSlots)}
+                        className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        予約可能な時間を見る
+                        {showSlots ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* スロット一覧 */}
+                    {showSlots && (
+                      <div className="mt-3 space-y-3 max-h-60 overflow-y-auto">
+                        {Object.keys(groupedSlots).length === 0 ? (
+                          <p className="text-sm text-gray-500">現在予約可能なスロットはありません</p>
+                        ) : (
+                          <>
+                            {Object.entries(groupedSlots).map(([date, dateSlots]) => (
+                              <div key={date}>
+                                <h4 className="text-xs font-bold text-gray-700 mb-1">
+                                  {new Date(date + "T00:00:00").toLocaleDateString("ja-JP", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    weekday: "short",
+                                  })}
+                                </h4>
+                                <div className="space-y-1 ml-2">
+                                  {dateSlots.map((slot) => {
+                                    const isSelected = selectedSlots.some((s) => s.id === slot.id);
+                                    return (
+                                      <button
+                                        key={slot.id}
+                                        onClick={() => toggleSlotSelection(slot)}
+                                        className={`flex items-center justify-between w-full rounded-lg px-3 py-2 transition-colors ${
+                                          isSelected
+                                            ? "bg-indigo-100 ring-2 ring-indigo-500"
+                                            : "bg-white hover:bg-gray-50"
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                            isSelected
+                                              ? "bg-indigo-600 border-indigo-600"
+                                              : "border-gray-300"
+                                          }`}>
+                                            {isSelected && (
+                                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                              </svg>
+                                            )}
+                                          </div>
+                                          <span className="text-sm text-gray-700">
+                                            {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                          </span>
+                                        </div>
+                                        <span className="text-sm text-gray-600">
+                                          ${(teacherRate / 100).toFixed(2)}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                            {/* 選択中の合計 + 予約ボタン */}
+                            {selectedSlots.length > 0 && (
+                              <div className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-indigo-200">
+                                <span className="text-sm font-medium text-gray-700">
+                                  {selectedSlots.length}時間選択中 ・ 合計: <span className="text-indigo-600 font-bold">${(teacherRate / 100 * selectedSlots.length).toFixed(2)} CAD</span>
+                                </span>
+                                <button
+                                  onClick={() => setShowConfirmModal(true)}
+                                  className="px-4 py-1.5 bg-indigo-600 text-white text-sm rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                                >
+                                  予約する
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* メッセージ一覧 */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {messages.length === 0 ? (
@@ -350,6 +537,83 @@ export default function MessagesPage() {
                 マッチングを選択してください
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 予約確認モーダル */}
+      {showConfirmModal && selectedMatch && teacherRate !== null && selectedSlots.length > 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-lg font-bold text-gray-900">予約確認</h2>
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">先生</span>
+                  <span className="font-medium text-gray-900">
+                    {selectedMatch.teacher.full_name || "名前未設定"}
+                  </span>
+                </div>
+
+                {/* 選択したスロット一覧 */}
+                <div className="py-2 border-b border-gray-100">
+                  <span className="text-gray-600 text-sm">選択した時間帯</span>
+                  <div className="mt-2 space-y-1">
+                    {selectedSlots
+                      .sort((a, b) => a.slot_date.localeCompare(b.slot_date) || a.start_time.localeCompare(b.start_time))
+                      .map((slot) => (
+                        <div key={slot.id} className="flex justify-between text-sm">
+                          <span className="text-gray-700">
+                            {new Date(slot.slot_date + "T00:00:00").toLocaleDateString("ja-JP", {
+                              month: "short",
+                              day: "numeric",
+                              weekday: "short",
+                            })}
+                          </span>
+                          <span className="text-gray-900 font-medium">
+                            {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                          </span>
+                          <span className="text-gray-600">
+                            ${(teacherRate / 100).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-900 font-bold">合計（{selectedSlots.length}時間）</span>
+                  <span className="font-bold text-lg text-indigo-600">
+                    ${(teacherRate / 100 * selectedSlots.length).toFixed(2)} CAD
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2.5 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={handleBookSelectedSlots}
+                  disabled={creatingBooking}
+                  className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                >
+                  {creatingBooking ? "予約中..." : "予約を確定する"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

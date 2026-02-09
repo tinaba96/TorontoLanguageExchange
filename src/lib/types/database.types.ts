@@ -90,6 +90,7 @@ export type Database = {
           teaching_experience: string | null
           specialties: string[] | null
           location: string | null
+          hourly_rate: number | null
           created_at: string
           updated_at: string
         }
@@ -100,6 +101,7 @@ export type Database = {
           teaching_experience?: string | null
           specialties?: string[] | null
           location?: string | null
+          hourly_rate?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -110,6 +112,7 @@ export type Database = {
           teaching_experience?: string | null
           specialties?: string[] | null
           location?: string | null
+          hourly_rate?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -166,6 +169,70 @@ export type Database = {
           created_at?: string
         }
       }
+      availability_slots: {
+        Row: {
+          id: string
+          teacher_id: string
+          slot_date: string
+          start_time: string
+          end_time: string
+          status: 'available' | 'booked'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          teacher_id: string
+          slot_date: string
+          start_time: string
+          end_time: string
+          status?: 'available' | 'booked'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          teacher_id?: string
+          slot_date?: string
+          start_time?: string
+          end_time?: string
+          status?: 'available' | 'booked'
+          created_at?: string
+        }
+      }
+      bookings: {
+        Row: {
+          id: string
+          match_id: string
+          slot_id: string
+          student_id: string
+          teacher_id: string
+          price_at_booking: number
+          status: 'pending_payment' | 'confirmed' | 'cancelled'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          match_id: string
+          slot_id: string
+          student_id: string
+          teacher_id: string
+          price_at_booking: number
+          status?: 'pending_payment' | 'confirmed' | 'cancelled'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          match_id?: string
+          slot_id?: string
+          student_id?: string
+          teacher_id?: string
+          price_at_booking?: number
+          status?: 'pending_payment' | 'confirmed' | 'cancelled'
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -176,6 +243,8 @@ export type StudentProfile = Database['public']['Tables']['student_profiles']['R
 export type TeacherProfile = Database['public']['Tables']['teacher_profiles']['Row']
 export type Match = Database['public']['Tables']['matches']['Row']
 export type Message = Database['public']['Tables']['messages']['Row']
+export type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row']
+export type Booking = Database['public']['Tables']['bookings']['Row']
 
 // Combined types for UI
 export type StudentWithProfile = Profile & {
