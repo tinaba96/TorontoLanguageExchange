@@ -1,62 +1,64 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import type { Profile } from '@/lib/types/database.types'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { Profile } from "@/lib/types/database.types";
 
 export default function Home() {
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
-  const supabase = createClient()
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
-    checkUser()
-  }, [])
+    checkUser();
+  }, []);
 
   const checkUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
 
       if (user) {
         const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        setProfile(profileData)
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+        setProfile(profileData);
       }
     } catch (error) {
-      console.error('Error checking user:', error)
+      console.error("Error checking user:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setProfile(null)
-  }
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+  };
 
   const goToDashboard = () => {
-    if (profile?.role === 'teacher') {
-      router.push('/teacher')
-    } else if (profile?.role === 'student') {
-      router.push('/student')
+    if (profile?.role === "teacher") {
+      router.push("/teacher");
+    } else if (profile?.role === "student") {
+      router.push("/student");
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-xl text-gray-700">読み込み中...</div>
+        <div className="text-xl text-gray-700">読み込みしています...</div>
       </div>
-    )
+    );
   }
 
   return (
@@ -66,12 +68,14 @@ export default function Home() {
         <div className="absolute top-4 right-4 bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-              {profile?.full_name?.charAt(0) || 'U'}
+              {profile?.full_name?.charAt(0) || "U"}
             </div>
             <div>
-              <p className="font-semibold text-gray-900">{profile?.full_name || 'ユーザー'}</p>
+              <p className="font-semibold text-gray-900">
+                {profile?.full_name || "ユーザー"}
+              </p>
               <p className="text-sm text-gray-500">
-                {profile?.role === 'teacher' ? 'Japanese' : 'English Speaker'}
+                {profile?.role === "teacher" ? "Japanese" : "English Speaker"}
               </p>
             </div>
             <button
@@ -141,7 +145,10 @@ export default function Home() {
         </div>
 
         <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
-          <Link href="/announcements" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+          <Link
+            href="/announcements"
+            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          >
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               全体告知
             </h3>
@@ -151,10 +158,11 @@ export default function Home() {
             <p className="text-indigo-600 text-sm mt-2">ログイン不要</p>
           </Link>
 
-          <Link href="/board" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              掲示板
-            </h3>
+          <Link
+            href="/board"
+            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">掲示板</h3>
             <p className="text-gray-600">
               ユーザー同士で情報交換や交流ができる掲示板
             </p>
@@ -183,5 +191,5 @@ export default function Home() {
         </div>
       </div>
     </div>
-  )
+  );
 }
