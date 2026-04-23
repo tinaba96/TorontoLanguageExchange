@@ -12,7 +12,7 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { icon: Calendar, label: '全体告知', href: '/announcements', requiresAuth: false },
+  { icon: Calendar, label: '全体告知!', href: '/announcements', requiresAuth: false },
   { icon: MessageSquare, label: '掲示板', href: '/board', requiresAuth: false },
   { icon: Users, label: '言語パートナー', href: '/teacher', requiresAuth: true, teacherHref: '/teacher', studentHref: '/student' },
   { icon: User, label: 'プロフィール', href: '/student', requiresAuth: true, roleRequired: 'student' as const },
