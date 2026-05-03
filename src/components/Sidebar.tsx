@@ -12,7 +12,7 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { icon: Calendar, label: '全体告知', href: '/announcements', requiresAuth: false },
+  { icon: Calendar, label: '全体告知!', href: '/announcements', requiresAuth: false },
   { icon: MessageSquare, label: '掲示板', href: '/board', requiresAuth: false },
   { icon: Users, label: '言語パートナー', href: '/teacher', requiresAuth: true, teacherHref: '/teacher', studentHref: '/student' },
   { icon: User, label: 'プロフィール', href: '/student', requiresAuth: true, roleRequired: 'student' as const },
@@ -37,7 +37,7 @@ export default function Sidebar({ profile, isOpen = true, onClose }: SidebarProp
 
   return (
     <>
-      {/* モバイル用オーバーレイ */}
+      {/* モバイルオーバーレイ */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"

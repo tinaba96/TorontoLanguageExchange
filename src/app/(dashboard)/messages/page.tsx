@@ -85,7 +85,7 @@ export default function MessagesPage() {
         return;
       }
 
-      // プロフィールとpassphrase_versionを取得
+      // プロフィールとpassphrase_versionを取得する
       const [profileResult, versionResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase
