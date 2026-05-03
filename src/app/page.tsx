@@ -56,7 +56,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-xl text-gray-700">読み込みしています.</div>
+        <div className="text-xl text-gray-700">読み込みしています..</div>
       </div>
     );
   }
