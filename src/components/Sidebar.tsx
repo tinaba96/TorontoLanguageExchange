@@ -15,7 +15,7 @@ interface SidebarProps {
 const menuItems = [
   { icon: Calendar, label: '全体告知!', href: '/announcements', requiresAuth: false },
   { icon: MessageSquare, label: '掲示板', href: '/board', requiresAuth: false },
-  { icon: Users, label: '言語パートナー', href: '/teacher', requiresAuth: true, teacherHref: '/teacher', studentHref: '/student' },
+  { icon: Users, label: '言語パートナー', href: '/students', requiresAuth: true, roleRequired: 'teacher' as const },
   { icon: User, label: 'プロフィール', href: '/student', requiresAuth: true, roleRequired: 'student' as const },
 ]
 
@@ -31,7 +31,7 @@ export default function Sidebar({ profile, isOpen = true, onClose }: SidebarProp
 
   const getLabel = (item: typeof menuItems[0]) => {
     if (item.label === '言語パートナー' && profile?.role === 'teacher') {
-      return '先生マッチング'
+      return '生徒を探す'
     }
     return item.label
   }

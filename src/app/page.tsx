@@ -48,7 +48,7 @@ export default function Home() {
 
   const goToDashboard = () => {
     if (profile?.role === "teacher") {
-      router.push("/teacher");
+      router.push("/students");
     } else if (profile?.role === "student") {
       router.push("/student");
     }
