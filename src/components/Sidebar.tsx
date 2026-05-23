@@ -22,13 +22,6 @@ const menuItems = [
 export default function Sidebar({ profile, isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname()
 
-  const getHref = (item: typeof menuItems[0]) => {
-    if (item.teacherHref && item.studentHref && profile) {
-      return profile.role === 'teacher' ? item.teacherHref : item.studentHref
-    }
-    return item.href
-  }
-
   const getLabel = (item: typeof menuItems[0]) => {
     if (item.label === '言語パートナー' && profile?.role === 'teacher') {
       return '生徒を探す'
@@ -61,14 +54,13 @@ export default function Sidebar({ profile, isOpen = true, onClose }: SidebarProp
               // 特定ロールが必要な項目でロールが一致しない場合はスキップ
               if (item.roleRequired && profile?.role !== item.roleRequired) return null
 
-              const href = getHref(item)
-              const isActive = pathname === href
+              const isActive = pathname === item.href
               const Icon = item.icon
 
               return (
                 <Link
                   key={item.label}
-                  href={href}
+                  href={item.href}
                   onClick={onClose}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive
