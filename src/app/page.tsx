@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types/database.types";
+import Avatar from "@/components/Avatar";
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -67,9 +68,11 @@ export default function Home() {
       {user && (
         <div className="absolute top-4 right-4 bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-              {profile?.full_name?.charAt(0) || "U"}
-            </div>
+            <Avatar
+              url={profile?.avatar_url}
+              name={profile?.full_name}
+              className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold"
+            />
             <div>
               <p className="font-semibold text-gray-900">
                 {profile?.full_name || "ユーザー"}

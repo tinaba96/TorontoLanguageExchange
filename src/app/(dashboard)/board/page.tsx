@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
 import { Heart, MessageCircle, Clock, X } from 'lucide-react'
+import Avatar from '@/components/Avatar'
 
 interface Post {
   id: string
@@ -403,9 +404,11 @@ export default function BulletinBoardPage() {
               <div className="flex flex-col md:flex-row">
                 {/* 左側: 画像エリア（プレースホルダー） */}
                 <div className="w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center rounded-t-lg md:rounded-l-lg md:rounded-tr-none flex-shrink-0">
-                  <div className="w-16 h-16 bg-indigo-200 rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl">
-                    {(post.author_name || post.author?.full_name || 'U').charAt(0)}
-                  </div>
+                  <Avatar
+                    url={post.author_name ? null : post.author?.avatar_url}
+                    name={post.author_name || post.author?.full_name}
+                    className="w-16 h-16 bg-indigo-200 rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl"
+                  />
                 </div>
 
                 {/* 右側: コンテンツ */}
@@ -550,9 +553,11 @@ export default function BulletinBoardPage() {
               {/* Original Post */}
               <div className="mb-6">
                 <div className="flex items-center mb-4">
-                  <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                    {(selectedPost.author_name || selectedPost.author?.full_name || 'U').charAt(0)}
-                  </div>
+                  <Avatar
+                    url={selectedPost.author_name ? null : selectedPost.author?.avatar_url}
+                    name={selectedPost.author_name || selectedPost.author?.full_name}
+                    className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold"
+                  />
                   <div className="ml-3">
                     <p className="font-semibold text-gray-900">{selectedPost.author_name || selectedPost.author?.full_name || '名前未設定'}</p>
                     <p className="text-sm text-gray-500">
@@ -604,9 +609,11 @@ export default function BulletinBoardPage() {
                     comments.map((comment) => (
                       <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                         <div className="flex items-center mb-2">
-                          <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">
-                            {(comment.author_name || comment.author?.full_name || 'U').charAt(0)}
-                          </div>
+                          <Avatar
+                            url={comment.author_name ? null : comment.author?.avatar_url}
+                            name={comment.author_name || comment.author?.full_name}
+                            className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm"
+                          />
                           <div className="ml-2">
                             <p className="font-semibold text-sm text-gray-900">
                               {comment.author_name || comment.author?.full_name || '名前未設定'}

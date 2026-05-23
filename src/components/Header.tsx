@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Menu, Bell, LogOut, Key, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
+import Avatar from './Avatar'
 
 interface HeaderProps {
   profile: Profile | null
@@ -59,9 +60,11 @@ export default function Header({ profile, onMenuClick }: HeaderProps) {
                 className="flex items-center gap-2 ml-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
                 aria-label="プロフィール"
               >
-                <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">
-                  {profile.full_name?.charAt(0) || 'U'}
-                </div>
+                <Avatar
+                  url={profile.avatar_url}
+                  name={profile.full_name}
+                  className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm"
+                />
                 <span className="hidden md:inline text-sm font-medium text-gray-700">
                   {profile.full_name}
                 </span>

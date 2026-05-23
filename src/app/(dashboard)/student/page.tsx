@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, StudentProfile } from '@/lib/types/database.types'
 import { Pencil, X, Check } from 'lucide-react'
+import Avatar from '@/components/Avatar'
 
 export default function StudentDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -147,9 +148,11 @@ export default function StudentDashboard() {
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl shadow-lg">
-                {profile?.full_name?.charAt(0) || 'U'}
-              </div>
+              <Avatar
+                url={profile?.avatar_url}
+                name={profile?.full_name}
+                className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl shadow-lg"
+              />
               <div className="ml-4">
                 <h2 className="text-xl font-bold">{profile?.full_name || '名前未設定'}</h2>
                 <p className="text-indigo-100">{profile?.email}</p>

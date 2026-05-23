@@ -1,10 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, StudentProfile, TeacherProfile } from '@/lib/types/database.types'
-import { Pencil, X, Check } from 'lucide-react'
+import { Pencil, X, Check, Camera, Trash2 } from 'lucide-react'
+import Avatar from '@/components/Avatar'
+
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_SIZE_BYTES = 2 * 1024 * 1024
 
 type StudentForm = {
   bio: string
@@ -49,6 +53,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [studentForm, setStudentForm] = useState<StudentForm>(emptyStudentForm)
   const [teacherForm, setTeacherForm] = useState<TeacherForm>(emptyTeacherForm)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const router = useRouter()
   const supabase = createClient()
@@ -173,6 +179,85 @@ export default function ProfilePage() {
     }
   }
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !profile) return
+
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      alert('対応形式は JPEG / PNG / WebP です')
+      return
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      alert('ファイルサイズは2MB以下にしてください')
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const folder = profile.id
+      const filePath = `${folder}/avatar-${Date.now()}.${ext}`
+
+      const { data: existing } = await supabase.storage.from('avatars').list(folder)
+      if (existing && existing.length > 0) {
+        await supabase.storage
+          .from('avatars')
+          .remove(existing.map((f) => `${folder}/${f.name}`))
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { contentType: file.type, upsert: true })
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+      const publicUrl = urlData.publicUrl
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id)
+      if (updateError) throw updateError
+
+      await loadProfile()
+    } catch (error) {
+      console.error('Error uploading avatar:', error)
+      alert('画像のアップロードに失敗しました')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
+  const handleAvatarDelete = async () => {
+    if (!profile?.avatar_url) return
+    if (!confirm('プロフィール画像を削除してもよろしいですか？')) return
+
+    setUploadingAvatar(true)
+    try {
+      const folder = profile.id
+      const { data: existing } = await supabase.storage.from('avatars').list(folder)
+      if (existing && existing.length > 0) {
+        await supabase.storage
+          .from('avatars')
+          .remove(existing.map((f) => `${folder}/${f.name}`))
+      }
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', profile.id)
+      if (updateError) throw updateError
+
+      await loadProfile()
+    } catch (error) {
+      console.error('Error deleting avatar:', error)
+      alert('画像の削除に失敗しました')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   const getLevelLabel = (level: string | null) => {
     const levels = { beginner: '初級', intermediate: '中級', advanced: '上級' }
     return levels[level as keyof typeof levels] || '未設定'
@@ -199,8 +284,33 @@ export default function ProfilePage() {
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl shadow-lg">
-                {profile?.full_name?.charAt(0) || 'U'}
+              <div className="relative group">
+                <Avatar
+                  url={profile?.avatar_url}
+                  name={profile?.full_name}
+                  fallback="U"
+                  className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl shadow-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white disabled:cursor-not-allowed"
+                  aria-label="画像を変更"
+                >
+                  {uploadingAvatar ? (
+                    <span className="text-xs">...</span>
+                  ) : (
+                    <Camera className="w-5 h-5" />
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
               </div>
               <div className="ml-4">
                 <h2 className="text-xl font-bold">{profile?.full_name || '名前未設定'}</h2>
@@ -208,6 +318,17 @@ export default function ProfilePage() {
                 <span className="inline-block mt-1 px-2 py-0.5 bg-white/20 rounded-full text-xs font-semibold">
                   {roleLabel}
                 </span>
+                {profile?.avatar_url && (
+                  <button
+                    type="button"
+                    onClick={handleAvatarDelete}
+                    disabled={uploadingAvatar}
+                    className="block mt-1 text-xs text-indigo-100 hover:text-white underline disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3 h-3 inline mr-1" />
+                    画像を削除
+                  </button>
+                )}
               </div>
             </div>
             {!editing ? (

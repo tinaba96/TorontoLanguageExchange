@@ -6,6 +6,7 @@ import type { Profile } from '@/lib/types/database.types'
 import RichTextEditor from '@/components/RichTextEditor'
 import Link from 'next/link'
 import { UserPlus, UserCheck, Pin, Clock, X, Pencil, Trash2 } from 'lucide-react'
+import Avatar from '@/components/Avatar'
 
 // ローカルストレージのキー
 const ANON_ANNOUNCEMENT_LIKES_KEY = 'anon_announcement_likes'
@@ -34,6 +35,7 @@ interface LikeUser {
   id: string
   full_name: string
   email: string
+  avatar_url?: string | null
   created_at: string
   participant_name?: string
   participant_email?: string
@@ -150,7 +152,7 @@ export default function AnnouncementsPage() {
         .select(`
           *,
           author:user_id(*),
-          announcement_likes(id, user_id, created_at, participant_name, participant_email, user:user_id(id, full_name, email))
+          announcement_likes(id, user_id, created_at, participant_name, participant_email, user:user_id(id, full_name, email, avatar_url))
         `)
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
@@ -171,6 +173,7 @@ export default function AnnouncementsPage() {
               id: likeUser?.id || '',
               full_name: like.participant_name || likeUser?.full_name || '名前未設定',
               email: like.participant_email || likeUser?.email || '',
+              avatar_url: likeUser?.avatar_url || null,
               created_at: like.created_at,
               participant_name: like.participant_name || null,
               participant_email: like.participant_email || null,
@@ -454,13 +457,15 @@ export default function AnnouncementsPage() {
                     ? 'bg-gradient-to-br from-yellow-100 to-orange-100'
                     : 'bg-gradient-to-br from-blue-100 to-indigo-100'
                 }`}>
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl ${
-                    announcement.is_pinned
-                      ? 'bg-yellow-200 text-yellow-700'
-                      : 'bg-indigo-200 text-indigo-600'
-                  }`}>
-                    {announcement.author?.full_name?.charAt(0) || 'U'}
-                  </div>
+                  <Avatar
+                    url={announcement.author?.avatar_url}
+                    name={announcement.author?.full_name}
+                    className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl ${
+                      announcement.is_pinned
+                        ? 'bg-yellow-200 text-yellow-700'
+                        : 'bg-indigo-200 text-indigo-600'
+                    }`}
+                  />
                 </div>
 
                 {/* 右側: コンテンツ */}
@@ -716,13 +721,15 @@ export default function AnnouncementsPage() {
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                            isAnon
-                              ? 'bg-gray-200 text-gray-500'
-                              : 'bg-indigo-100 text-indigo-600'
-                          }`}>
-                            {user.full_name?.charAt(0) || 'U'}
-                          </div>
+                          <Avatar
+                            url={!isAnon ? user.avatar_url : null}
+                            name={user.full_name}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                              isAnon
+                                ? 'bg-gray-200 text-gray-500'
+                                : 'bg-indigo-100 text-indigo-600'
+                            }`}
+                          />
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="font-semibold text-gray-900">{user.full_name}</p>

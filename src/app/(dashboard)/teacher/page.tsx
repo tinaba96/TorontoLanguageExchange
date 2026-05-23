@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, StudentWithProfile, AvailabilitySlot } from "@/lib/types/database.types";
 import { X, MapPin, Clock, Target, Sparkles, User, DollarSign, Calendar, Trash2 } from "lucide-react";
+import Avatar from "@/components/Avatar";
 
 type Tab = "students" | "lesson-settings";
 
@@ -354,9 +355,12 @@ export default function TeacherDashboard() {
                   {/* Header */}
                   <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
                     <div className="flex items-center mb-3">
-                      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl shadow-lg">
-                        {student.full_name?.charAt(0) || "S"}
-                      </div>
+                      <Avatar
+                        url={student.avatar_url}
+                        name={student.full_name}
+                        fallback="S"
+                        className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl shadow-lg"
+                      />
                       <div className="ml-4">
                         <h3 className="font-bold text-xl">
                           {student.full_name || "名前未設定"}
@@ -606,9 +610,12 @@ export default function TeacherDashboard() {
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white sticky top-0">
               <div className="flex justify-between items-start">
                 <div className="flex items-center">
-                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-3xl shadow-lg">
-                    {selectedStudent.full_name?.charAt(0) || "S"}
-                  </div>
+                  <Avatar
+                    url={selectedStudent.avatar_url}
+                    name={selectedStudent.full_name}
+                    fallback="S"
+                    className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-3xl shadow-lg"
+                  />
                   <div className="ml-4">
                     <h2 className="text-2xl font-bold">
                       {selectedStudent.full_name || "名前未設定"}

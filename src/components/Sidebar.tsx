@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Calendar, MessageSquare, Users, User, Settings, Info } from 'lucide-react'
 import type { Profile } from '@/lib/types/database.types'
+import Avatar from './Avatar'
 
 interface SidebarProps {
   profile: Profile | null
@@ -135,9 +136,11 @@ export default function Sidebar({ profile, isOpen = true, onClose }: SidebarProp
           <div className="px-4 py-4">
             {profile ? (
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                  {profile.full_name?.charAt(0) || 'U'}
-                </div>
+                <Avatar
+                  url={profile.avatar_url}
+                  name={profile.full_name}
+                  className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {profile.full_name || '名前未設定'}

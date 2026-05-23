@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Avatar from "@/components/Avatar";
 import type {
   Profile,
   MatchWithProfiles,
@@ -325,9 +326,11 @@ export default function MessagesPage() {
                     }`}
                   >
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                        {otherUser?.full_name?.charAt(0) || "U"}
-                      </div>
+                      <Avatar
+                        url={otherUser?.avatar_url}
+                        name={otherUser?.full_name}
+                        className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold"
+                      />
                       <div className="ml-3 flex-1">
                         <p className="font-semibold text-gray-900">
                           {otherUser?.full_name || "名前未設定"}
@@ -350,10 +353,11 @@ export default function MessagesPage() {
                 {/* ヘッダー */}
                 <div className="p-4 border-b">
                   <div className="flex items-center">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                      {getOtherUser(selectedMatch)?.full_name?.charAt(0) ||
-                        "U"}
-                    </div>
+                    <Avatar
+                      url={getOtherUser(selectedMatch)?.avatar_url}
+                      name={getOtherUser(selectedMatch)?.full_name}
+                      className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold"
+                    />
                     <div className="ml-3">
                       <p className="font-semibold text-gray-900">
                         {getOtherUser(selectedMatch)?.full_name ||
