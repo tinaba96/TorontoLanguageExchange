@@ -206,7 +206,12 @@ export type Database = {
           student_id: string
           teacher_id: string
           price_at_booking: number
-          status: 'pending_payment' | 'confirmed' | 'cancelled'
+          status: 'pending_payment' | 'paid' | 'confirmed' | 'cancelled' | 'refunded'
+          stripe_payment_intent_id: string | null
+          teacher_payout_amount: number | null
+          platform_amount: number | null
+          system_amount: number | null
+          paid_at: string | null
           created_at: string
           updated_at: string
         }
@@ -217,7 +222,12 @@ export type Database = {
           student_id: string
           teacher_id: string
           price_at_booking: number
-          status?: 'pending_payment' | 'confirmed' | 'cancelled'
+          status?: 'pending_payment' | 'paid' | 'confirmed' | 'cancelled' | 'refunded'
+          stripe_payment_intent_id?: string | null
+          teacher_payout_amount?: number | null
+          platform_amount?: number | null
+          system_amount?: number | null
+          paid_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -228,9 +238,49 @@ export type Database = {
           student_id?: string
           teacher_id?: string
           price_at_booking?: number
-          status?: 'pending_payment' | 'confirmed' | 'cancelled'
+          status?: 'pending_payment' | 'paid' | 'confirmed' | 'cancelled' | 'refunded'
+          stripe_payment_intent_id?: string | null
+          teacher_payout_amount?: number | null
+          platform_amount?: number | null
+          system_amount?: number | null
+          paid_at?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          title: string
+          body: string | null
+          link: string | null
+          metadata: Json | null
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          title: string
+          body?: string | null
+          link?: string | null
+          metadata?: Json | null
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          body?: string | null
+          link?: string | null
+          metadata?: Json | null
+          is_read?: boolean
+          created_at?: string
         }
       }
     }
@@ -245,6 +295,7 @@ export type Match = Database['public']['Tables']['matches']['Row']
 export type Message = Database['public']['Tables']['messages']['Row']
 export type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row']
 export type Booking = Database['public']['Tables']['bookings']['Row']
+export type Notification = Database['public']['Tables']['notifications']['Row']
 
 // Combined types for UI
 export type StudentWithProfile = Profile & {

@@ -2,10 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Menu, Bell, LogOut, Key, User } from 'lucide-react'
+import { Menu, LogOut, Key, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
 import Avatar from './Avatar'
+import NotificationDropdown from './NotificationDropdown'
 
 interface HeaderProps {
   profile: Profile | null
@@ -46,13 +47,8 @@ export default function Header({ profile, onMenuClick }: HeaderProps) {
         <div className="flex items-center gap-2">
           {profile ? (
             <>
-              {/* 通知アイコン */}
-              <button
-                className="p-2 rounded-lg hover:bg-gray-100 relative"
-                aria-label="通知"
-              >
-                <Bell className="w-5 h-5 text-gray-600" />
-              </button>
+              {/* 通知ベル + ドロップダウン */}
+              <NotificationDropdown userId={profile.id} />
 
               {/* ユーザーアバター */}
               <Link
