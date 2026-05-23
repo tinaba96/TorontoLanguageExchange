@@ -54,14 +54,18 @@ export default function Header({ profile, onMenuClick }: HeaderProps) {
               </button>
 
               {/* ユーザーアバター */}
-              <div className="flex items-center gap-2 ml-2">
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 ml-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="プロフィール"
+              >
                 <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">
                   {profile.full_name?.charAt(0) || 'U'}
                 </div>
                 <span className="hidden md:inline text-sm font-medium text-gray-700">
                   {profile.full_name}
                 </span>
-              </div>
+              </Link>
 
               {/* ログアウトボタン */}
               <button

@@ -45,6 +45,7 @@ interface Announcement {
   title: string
   content: string
   is_pinned: boolean
+  max_participants: number | null
   created_at: string
   updated_at: string
   author: Profile
@@ -61,6 +62,7 @@ export default function AnnouncementsPage() {
   const [newTitle, setNewTitle] = useState('')
   const [newContent, setNewContent] = useState('')
   const [newIsPinned, setNewIsPinned] = useState(false)
+  const [newMaxParticipants, setNewMaxParticipants] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null)
   const [showLikesModal, setShowLikesModal] = useState<Announcement | null>(null)
@@ -68,6 +70,7 @@ export default function AnnouncementsPage() {
   const [showJoinModal, setShowJoinModal] = useState<string | null>(null)
   const [joinName, setJoinName] = useState('')
   const [joinEmail, setJoinEmail] = useState('')
+  const [showDetailModal, setShowDetailModal] = useState<Announcement | null>(null)
 
   const supabase = createClient()
 
@@ -187,6 +190,12 @@ export default function AnnouncementsPage() {
 
     setSubmitting(true)
     try {
+      const parsedMax = newMaxParticipants.trim() === '' ? null : parseInt(newMaxParticipants, 10)
+      if (parsedMax !== null && (!Number.isFinite(parsedMax) || parsedMax <= 0)) {
+        alert('人数制限は1以上の整数を入力してください')
+        setSubmitting(false)
+        return
+      }
       const { error } = await supabase
         .from('announcements')
         .insert({
@@ -194,6 +203,7 @@ export default function AnnouncementsPage() {
           title: newTitle.trim(),
           content: newContent.trim(),
           is_pinned: newIsPinned,
+          max_participants: parsedMax,
         })
 
       if (error) throw error
@@ -201,6 +211,7 @@ export default function AnnouncementsPage() {
       setNewTitle('')
       setNewContent('')
       setNewIsPinned(false)
+      setNewMaxParticipants('')
       setShowNewModal(false)
     } catch (error) {
       console.error('Error creating announcement:', error)
@@ -216,12 +227,24 @@ export default function AnnouncementsPage() {
 
     setSubmitting(true)
     try {
+      const parsedMax = newMaxParticipants.trim() === '' ? null : parseInt(newMaxParticipants, 10)
+      if (parsedMax !== null && (!Number.isFinite(parsedMax) || parsedMax <= 0)) {
+        alert('人数制限は1以上の整数を入力してください')
+        setSubmitting(false)
+        return
+      }
+      if (parsedMax !== null && parsedMax < editingAnnouncement.likes_count) {
+        alert(`現在の参加者数 (${editingAnnouncement.likes_count}人) より小さい値は設定できません`)
+        setSubmitting(false)
+        return
+      }
       const { error } = await supabase
         .from('announcements')
         .update({
           title: newTitle.trim(),
           content: newContent.trim(),
           is_pinned: newIsPinned,
+          max_participants: parsedMax,
           updated_at: new Date().toISOString(),
         })
         .eq('id', editingAnnouncement.id)
@@ -231,6 +254,7 @@ export default function AnnouncementsPage() {
       setNewTitle('')
       setNewContent('')
       setNewIsPinned(false)
+      setNewMaxParticipants('')
       setEditingAnnouncement(null)
     } catch (error) {
       console.error('Error updating announcement:', error)
@@ -260,6 +284,11 @@ export default function AnnouncementsPage() {
     setNewTitle(announcement.title)
     setNewContent(announcement.content)
     setNewIsPinned(announcement.is_pinned)
+    setNewMaxParticipants(
+      announcement.max_participants !== null && announcement.max_participants !== undefined
+        ? String(announcement.max_participants)
+        : ''
+    )
     setEditingAnnouncement(announcement)
   }
 
@@ -267,18 +296,28 @@ export default function AnnouncementsPage() {
     setNewTitle('')
     setNewContent('')
     setNewIsPinned(false)
+    setNewMaxParticipants('')
     setShowNewModal(false)
     setEditingAnnouncement(null)
   }
 
-  const handleJoinClick = (announcementId: string, hasLiked: boolean) => {
+  const isFull = (announcement: Announcement) =>
+    announcement.max_participants !== null &&
+    announcement.max_participants !== undefined &&
+    announcement.likes_count >= announcement.max_participants
+
+  const handleJoinClick = (announcement: Announcement) => {
+    const hasLiked = announcement.user_has_liked
+    // 満員でも、参加済みユーザーはキャンセル可能
+    if (!hasLiked && isFull(announcement)) return
+
     if (profile) {
       // ログインユーザー: そのまま参加/取消
-      handleJoin(announcementId, hasLiked)
+      handleJoin(announcement.id, hasLiked)
     } else {
       if (hasLiked) return // すでに参加済み
       // 未ログインユーザー: ポップアップ表示
-      setShowJoinModal(announcementId)
+      setShowJoinModal(announcement.id)
       setJoinName('')
       setJoinEmail('')
     }
@@ -310,8 +349,12 @@ export default function AnnouncementsPage() {
       }
       // 告知を再読み込み
       await loadAnnouncements()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling join:', error)
+      if (error?.message?.includes('announcement_full')) {
+        alert('このイベントは満員になりました')
+        await loadAnnouncements()
+      }
     }
   }
 
@@ -339,9 +382,14 @@ export default function AnnouncementsPage() {
       setJoinEmail('')
 
       await loadAnnouncements()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error joining:', error)
-      alert('参加登録に失敗しました')
+      if (error?.message?.includes('announcement_full')) {
+        alert('このイベントは満員になりました')
+        await loadAnnouncements()
+      } else {
+        alert('参加登録に失敗しました')
+      }
     }
   }
 
@@ -394,7 +442,8 @@ export default function AnnouncementsPage() {
           announcements.map((announcement) => (
             <div
               key={announcement.id}
-              className={`bg-white rounded-lg shadow hover:shadow-lg transition-shadow border ${
+              onClick={() => setShowDetailModal(announcement)}
+              className={`bg-white rounded-lg shadow hover:shadow-lg transition-shadow border cursor-pointer ${
                 announcement.is_pinned ? 'border-yellow-300' : 'border-gray-200'
               }`}
             >
@@ -446,36 +495,60 @@ export default function AnnouncementsPage() {
                   {/* アクションボタン */}
                   <div className="flex items-center gap-4 flex-wrap">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleJoinClick(announcement.id, announcement.user_has_liked)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          announcement.user_has_liked
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                            : 'bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100'
-                        }`}
-                      >
-                        {announcement.user_has_liked ? (
-                          <UserCheck className="w-4 h-4" />
-                        ) : (
-                          <UserPlus className="w-4 h-4" />
-                        )}
-                        <span>
-                          {announcement.user_has_liked ? '参加済み' : '参加する'}
-                        </span>
-                        {announcement.likes_count > 0 && (
-                          <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${
-                            announcement.user_has_liked
-                              ? 'bg-white/20'
-                              : 'bg-indigo-100'
-                          }`}>
-                            {announcement.likes_count}
-                          </span>
-                        )}
-                      </button>
+                      {(() => {
+                        const full = isFull(announcement)
+                        const disabled = full && !announcement.user_has_liked
+                        const cap = announcement.max_participants
+                        return (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleJoinClick(announcement)
+                            }}
+                            disabled={disabled}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              disabled
+                                ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                                : announcement.user_has_liked
+                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                : 'bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100'
+                            }`}
+                          >
+                            {announcement.user_has_liked ? (
+                              <UserCheck className="w-4 h-4" />
+                            ) : (
+                              <UserPlus className="w-4 h-4" />
+                            )}
+                            <span>
+                              {announcement.user_has_liked
+                                ? '参加済み'
+                                : full
+                                ? '満員'
+                                : '参加する'}
+                            </span>
+                            <span
+                              className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${
+                                disabled
+                                  ? 'bg-gray-200 text-gray-500'
+                                  : announcement.user_has_liked
+                                  ? 'bg-white/20'
+                                  : 'bg-indigo-100'
+                              }`}
+                            >
+                              {cap !== null && cap !== undefined
+                                ? `${announcement.likes_count} / ${cap}`
+                                : announcement.likes_count}
+                            </span>
+                          </button>
+                        )
+                      })()}
                       {/* Admin: View participants list */}
                       {profile?.is_admin && announcement.likes_count > 0 && (
                         <button
-                          onClick={() => setShowLikesModal(announcement)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowLikesModal(announcement)
+                          }}
                           className="text-indigo-600 hover:text-indigo-700 text-sm font-medium underline"
                         >
                           参加者一覧
@@ -487,14 +560,20 @@ export default function AnnouncementsPage() {
                     {profile?.is_admin && (
                       <div className="flex items-center gap-2 ml-auto">
                         <button
-                          onClick={() => openEditModal(announcement)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openEditModal(announcement)
+                          }}
                           className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                         >
                           <Pencil className="w-4 h-4" />
                           編集
                         </button>
                         <button
-                          onClick={() => handleDelete(announcement.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(announcement.id)
+                          }}
                           className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -509,6 +588,102 @@ export default function AnnouncementsPage() {
           ))
         )}
       </div>
+
+      {/* Detail Modal */}
+      {showDetailModal && (() => {
+        const detail = announcements.find((a) => a.id === showDetailModal.id) || showDetailModal
+        const full = isFull(detail)
+        const disabled = full && !detail.user_has_liked
+        const cap = detail.max_participants
+        return (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            onClick={() => setShowDetailModal(null)}
+          >
+            <div
+              className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      {detail.is_pinned && (
+                        <span className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-semibold">
+                          <Pin className="w-3 h-3" />
+                          固定
+                        </span>
+                      )}
+                      <h2 className="text-xl font-bold text-gray-900 break-words">{detail.title}</h2>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 flex-wrap">
+                      <span className="font-medium">{detail.author?.full_name || '名前未設定'}</span>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{formatDate(detail.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowDetailModal(null)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                  >
+                    <X className="w-6 h-6 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                <div
+                  className="text-gray-700 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: detail.content }}
+                />
+              </div>
+              <div className="p-4 border-t flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={() => handleJoinClick(detail)}
+                  disabled={disabled}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    disabled
+                      ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                      : detail.user_has_liked
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100'
+                  }`}
+                >
+                  {detail.user_has_liked ? (
+                    <UserCheck className="w-4 h-4" />
+                  ) : (
+                    <UserPlus className="w-4 h-4" />
+                  )}
+                  <span>
+                    {detail.user_has_liked ? '参加済み' : full ? '満員' : '参加する'}
+                  </span>
+                  <span
+                    className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${
+                      disabled
+                        ? 'bg-gray-200 text-gray-500'
+                        : detail.user_has_liked
+                        ? 'bg-white/20'
+                        : 'bg-indigo-100'
+                    }`}
+                  >
+                    {cap !== null && cap !== undefined
+                      ? `${detail.likes_count} / ${cap}`
+                      : detail.likes_count}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setShowDetailModal(null)}
+                  className="ml-auto bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                >
+                  閉じる
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Likes List Modal (Admin only) */}
       {showLikesModal && (
@@ -692,6 +867,20 @@ export default function AnnouncementsPage() {
                   content={newContent}
                   onChange={setNewContent}
                   placeholder="告知の内容を入力してください"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  人数制限 <span className="text-gray-400 text-xs">（空欄なら無制限）</span>
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={newMaxParticipants}
+                  onChange={(e) => setNewMaxParticipants(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="例: 10"
                 />
               </div>
               <div className="flex items-center">
