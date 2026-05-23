@@ -13,6 +13,7 @@ import {
   Filter,
   RefreshCcw,
   User,
+  X,
 } from "lucide-react";
 
 type BookingRow = {
@@ -26,6 +27,7 @@ type BookingRow = {
   created_at: string;
   student_id: string;
   teacher_id: string;
+  stripe_payment_intent_id: string | null;
   student: { full_name: string | null; email: string | null } | null;
   teacher: { full_name: string | null; email: string | null } | null;
   slot: { slot_date: string; start_time: string; end_time: string } | null;
@@ -155,6 +157,7 @@ const SELECT_BASE = `
   created_at,
   student_id,
   teacher_id,
+  stripe_payment_intent_id,
   student:student_id(full_name, email),
   teacher:teacher_id(full_name, email),
   slot:slot_id(slot_date, start_time, end_time)
@@ -364,6 +367,10 @@ function AdminBookingsView() {
   const [periodEnd, setPeriodEnd] = useState<string>(() =>
     new Date().toISOString().slice(0, 10),
   );
+  const [refundTarget, setRefundTarget] = useState<BookingRow | null>(null);
+  const [refundSiblings, setRefundSiblings] = useState<BookingRow[]>([]);
+  const [processingRefund, setProcessingRefund] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const supabase = createClient();
 
   const load = async () => {
@@ -454,6 +461,55 @@ function AdminBookingsView() {
     a.download = `bookings_${periodStart}_${periodEnd}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const openRefundModal = async (booking: BookingRow) => {
+    setRefundTarget(booking);
+    setRefundSiblings([]);
+    if (!booking.stripe_payment_intent_id) return;
+
+    // Find any other bookings sharing the same PaymentIntent — they will
+    // all be refunded together by Stripe.
+    const { data } = await supabase
+      .from("bookings")
+      .select(SELECT_BASE)
+      .eq("stripe_payment_intent_id", booking.stripe_payment_intent_id);
+
+    const all = normalise((data as any[]) ?? []);
+    setRefundSiblings(all.filter((b) => b.id !== booking.id));
+  };
+
+  const closeRefundModal = () => {
+    setRefundTarget(null);
+    setRefundSiblings([]);
+  };
+
+  const submitRefund = async () => {
+    if (!refundTarget) return;
+    setProcessingRefund(true);
+    try {
+      const res = await fetch("/api/stripe/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: refundTarget.id }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(json.error ?? "返金に失敗しました");
+        return;
+      }
+      closeRefundModal();
+      setNotice("返金処理を開始しました。数秒後に一覧が更新されます。");
+      // Webhook updates the DB asynchronously — give it a moment, then refresh.
+      setTimeout(() => {
+        load();
+        setNotice(null);
+      }, 3000);
+    } catch (err: any) {
+      alert(err?.message ?? "ネットワークエラー");
+    } finally {
+      setProcessingRefund(false);
+    }
   };
 
   return (
@@ -556,42 +612,190 @@ function AdminBookingsView() {
                   <th className="text-right px-3 py-2 font-semibold">運営</th>
                   <th className="text-right px-3 py-2 font-semibold">システム</th>
                   <th className="text-center px-3 py-2 font-semibold">状態</th>
+                  <th className="text-center px-3 py-2 font-semibold">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {bookings.map((b) => (
-                  <tr key={b.id} className="hover:bg-gray-50">
-                    <td className="px-3 py-2 text-gray-900 whitespace-nowrap">
-                      {formatDateTime(b.slot)}
-                    </td>
-                    <td className="px-3 py-2 text-gray-700">
-                      {b.student?.full_name ?? "—"}
-                    </td>
-                    <td className="px-3 py-2 text-gray-700">
-                      {b.teacher?.full_name ?? "—"}
-                    </td>
-                    <td className="px-3 py-2 text-right font-medium">
-                      {formatCurrency(b.price_at_booking)}
-                    </td>
-                    <td className="px-3 py-2 text-right text-green-700">
-                      {formatCurrency(b.teacher_payout_amount)}
-                    </td>
-                    <td className="px-3 py-2 text-right text-indigo-700">
-                      {formatCurrency(b.platform_amount)}
-                    </td>
-                    <td className="px-3 py-2 text-right text-gray-600">
-                      {formatCurrency(b.system_amount)}
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      {statusBadge(b.status)}
-                    </td>
-                  </tr>
-                ))}
+                {bookings.map((b) => {
+                  const refundable =
+                    (b.status === "confirmed" || b.status === "paid") &&
+                    !!b.stripe_payment_intent_id;
+                  return (
+                    <tr key={b.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-gray-900 whitespace-nowrap">
+                        {formatDateTime(b.slot)}
+                      </td>
+                      <td className="px-3 py-2 text-gray-700">
+                        {b.student?.full_name ?? "—"}
+                      </td>
+                      <td className="px-3 py-2 text-gray-700">
+                        {b.teacher?.full_name ?? "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right font-medium">
+                        {formatCurrency(b.price_at_booking)}
+                      </td>
+                      <td className="px-3 py-2 text-right text-green-700">
+                        {formatCurrency(b.teacher_payout_amount)}
+                      </td>
+                      <td className="px-3 py-2 text-right text-indigo-700">
+                        {formatCurrency(b.platform_amount)}
+                      </td>
+                      <td className="px-3 py-2 text-right text-gray-600">
+                        {formatCurrency(b.system_amount)}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        {statusBadge(b.status)}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        {refundable ? (
+                          <button
+                            onClick={() => openRefundModal(b)}
+                            className="px-3 py-1 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors"
+                          >
+                            返金する
+                          </button>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
+
+      {notice && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg text-sm z-50">
+          {notice}
+        </div>
+      )}
+
+      {refundTarget && (
+        <RefundConfirmModal
+          target={refundTarget}
+          siblings={refundSiblings}
+          processing={processingRefund}
+          onCancel={closeRefundModal}
+          onConfirm={submitRefund}
+        />
+      )}
+    </div>
+  );
+}
+
+function RefundConfirmModal({
+  target,
+  siblings,
+  processing,
+  onCancel,
+  onConfirm,
+}: {
+  target: BookingRow;
+  siblings: BookingRow[];
+  processing: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const totalCount = siblings.length + 1;
+  const totalAmount =
+    target.price_at_booking +
+    siblings.reduce((sum, b) => sum + b.price_at_booking, 0);
+  const buttonLabel = processing
+    ? "処理中..."
+    : totalCount > 1
+      ? `全${totalCount}件まとめて返金する`
+      : "返金する";
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-start mb-4">
+            <h2 className="text-lg font-bold text-gray-900">返金確認</h2>
+            <button
+              onClick={onCancel}
+              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          <div className="space-y-2 mb-4 text-sm">
+            <div className="flex justify-between py-2 border-b border-gray-100">
+              <span className="text-gray-600">生徒</span>
+              <span className="font-medium text-gray-900">
+                {target.student?.full_name ?? "—"}
+              </span>
+            </div>
+            <div className="flex justify-between py-2 border-b border-gray-100">
+              <span className="text-gray-600">先生</span>
+              <span className="font-medium text-gray-900">
+                {target.teacher?.full_name ?? "—"}
+              </span>
+            </div>
+            <div className="py-2 border-b border-gray-100">
+              <span className="text-gray-600 text-xs">対象予約</span>
+              <div className="mt-1 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-700">
+                    {formatDateTime(target.slot)}
+                  </span>
+                  <span className="text-gray-900 font-medium">
+                    {formatCurrency(target.price_at_booking)}
+                  </span>
+                </div>
+                {siblings.map((b) => (
+                  <div key={b.id} className="flex justify-between">
+                    <span className="text-gray-700">
+                      {formatDateTime(b.slot)}
+                    </span>
+                    <span className="text-gray-900 font-medium">
+                      {formatCurrency(b.price_at_booking)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-gray-900 font-bold">合計返金額</span>
+              <span className="font-bold text-lg text-red-600">
+                {formatCurrency(totalAmount)} CAD
+              </span>
+            </div>
+          </div>
+
+          {siblings.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3 text-xs text-amber-900">
+              この決済には他に {siblings.length} 件の予約が含まれています。Stripe
+              の仕様により、これらもまとめて返金されます。
+            </div>
+          )}
+
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-xs text-amber-900">
+            この操作は取り消せません。Stripe から顧客のカードへ返金され、対応するレッスン枠は空き状態に戻ります。
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              disabled={processing}
+              className="flex-1 bg-gray-200 text-gray-700 py-2.5 rounded-lg font-semibold hover:bg-gray-300 transition-colors disabled:opacity-50"
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={processing}
+              className="flex-1 bg-red-600 text-white py-2.5 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              {buttonLabel}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
