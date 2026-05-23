@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, MessageSquare, Users, User, Settings, Info } from 'lucide-react'
+import { Calendar, CalendarCheck, MessageSquare, Users, User, Settings, Info } from 'lucide-react'
 import type { Profile } from '@/lib/types/database.types'
 import Avatar from './Avatar'
 
@@ -90,20 +90,34 @@ export default function Sidebar({ profile, isOpen = true, onClose }: SidebarProp
               </Link>
             )}
 
-            {/* メッセージ（ログインユーザーのみ） */}
+            {/* メッセージ + 予約一覧（ログインユーザーのみ） */}
             {profile && (
-              <Link
-                href="/messages"
-                onClick={onClose}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  pathname === '/messages'
-                    ? 'bg-indigo-50 text-indigo-600'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <MessageSquare className="w-5 h-5" />
-                <span className="font-medium">メッセージ</span>
-              </Link>
+              <>
+                <Link
+                  href="/messages"
+                  onClick={onClose}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    pathname === '/messages'
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  <span className="font-medium">メッセージ</span>
+                </Link>
+                <Link
+                  href="/bookings"
+                  onClick={onClose}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    pathname === '/bookings'
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <CalendarCheck className="w-5 h-5" />
+                  <span className="font-medium">予約一覧</span>
+                </Link>
+              </>
             )}
           </nav>
 

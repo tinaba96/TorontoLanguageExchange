@@ -243,25 +243,34 @@ export default function MessagesPage() {
 
     setCreatingBooking(true);
     try {
-      // 各スロットの予約を作成（スロットのstatusは決済完了後に更新する）
-      const inserts = selectedSlots.map((slot) => ({
-        match_id: selectedMatch.id,
-        slot_id: slot.id,
-        student_id: profile.id,
-        teacher_id: selectedMatch.teacher_id,
-        price_at_booking: teacherRate,
-      }));
+      // Atomic: lock the slots (status='reserved' for 15 min) AND insert
+      // pending_payment bookings in a single transaction via RPC.
+      // If any slot was taken in the meantime, the RPC raises 'slot_unavailable'.
+      const { data, error } = await supabase.rpc("reserve_slots_for_booking", {
+        p_match_id: selectedMatch.id,
+        p_slot_ids: selectedSlots.map((s) => s.id),
+        p_student_id: profile.id,
+        p_teacher_id: selectedMatch.teacher_id,
+        p_price_at_booking: teacherRate,
+        p_hold_minutes: 15,
+      } as any);
 
-      const { data: bookings, error: bookingError } = await supabase
-        .from("bookings")
-        .insert(inserts as any)
-        .select();
+      if (error) {
+        if (error.message?.includes("slot_unavailable")) {
+          alert("選択したスロットの一部はすでに予約されています。最新の空き状況を確認してください。");
+        } else if (error.message?.includes("forbidden")) {
+          alert("操作が許可されていません。再ログインしてお試しください。");
+        } else {
+          alert("予約の作成に失敗しました。再度お試しください。");
+        }
+        return;
+      }
+      if (!data || (data as any[]).length === 0) {
+        alert("予約データが返されませんでした");
+        return;
+      }
 
-      if (bookingError) throw bookingError;
-      if (!bookings || bookings.length === 0) throw new Error("予約データが返されませんでした");
-
-      // 支払いページへリダイレクト
-      const bookingIds = (bookings as any[]).map((b) => b.id).join(",");
+      const bookingIds = (data as Array<{ booking_id: string }>).map((b) => b.booking_id).join(",");
       router.push(`/payment/checkout?ids=${bookingIds}`);
     } catch (error) {
       console.error("Error creating booking:", error);

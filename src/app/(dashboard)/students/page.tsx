@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, StudentWithProfile, AvailabilitySlot } from "@/lib/types/database.types";
-import { X, MapPin, Clock, Target, Sparkles, User, DollarSign, Calendar, Trash2 } from "lucide-react";
+import { X, MapPin, Clock, Target, Sparkles, User, DollarSign, Calendar, Trash2, AlertTriangle } from "lucide-react";
 import Avatar from "@/components/Avatar";
 
 type Tab = "students" | "lesson-settings";
@@ -509,6 +509,32 @@ export default function TeacherDashboard() {
               <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
               スケジュール設定
             </h2>
+
+            {/* 重要なご案内 */}
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-900 leading-relaxed">
+                  <p className="font-semibold mb-1">スロット作成前にご確認ください</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>
+                      一度予約が入ったスロットは
+                      <span className="font-semibold">原則キャンセルできません</span>。
+                      確実に対応できる日時のみご登録ください。
+                    </li>
+                    <li>
+                      やむを得ず変更・キャンセルが必要な場合は、
+                      <span className="font-semibold">速やかに生徒へ連絡</span>
+                      してください。
+                    </li>
+                    <li>
+                      予約状況や直前のキャンセルは信頼に影響します。慎重にスケジュールを設定してください。
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-wrap items-end gap-3 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">日付</label>
@@ -577,10 +603,16 @@ export default function TeacherDashboard() {
                               className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                                 slot.status === "available"
                                   ? "bg-green-100 text-green-700"
+                                  : slot.status === "reserved"
+                                  ? "bg-amber-100 text-amber-700"
                                   : "bg-red-100 text-red-700"
                               }`}
                             >
-                              {slot.status === "available" ? "空き" : "予約済み"}
+                              {slot.status === "available"
+                                ? "空き"
+                                : slot.status === "reserved"
+                                ? "決済待ち"
+                                : "予約済み"}
                             </span>
                           </div>
                           {slot.status === "available" && (

@@ -176,7 +176,8 @@ export type Database = {
           slot_date: string
           start_time: string
           end_time: string
-          status: 'available' | 'booked'
+          status: 'available' | 'reserved' | 'booked'
+          reserved_until: string | null
           created_at: string
         }
         Insert: {
@@ -185,7 +186,8 @@ export type Database = {
           slot_date: string
           start_time: string
           end_time: string
-          status?: 'available' | 'booked'
+          status?: 'available' | 'reserved' | 'booked'
+          reserved_until?: string | null
           created_at?: string
         }
         Update: {
@@ -194,7 +196,8 @@ export type Database = {
           slot_date?: string
           start_time?: string
           end_time?: string
-          status?: 'available' | 'booked'
+          status?: 'available' | 'reserved' | 'booked'
+          reserved_until?: string | null
           created_at?: string
         }
       }
@@ -212,6 +215,7 @@ export type Database = {
           platform_amount: number | null
           system_amount: number | null
           paid_at: string | null
+          expires_at: string | null
           created_at: string
           updated_at: string
         }
@@ -228,6 +232,7 @@ export type Database = {
           platform_amount?: number | null
           system_amount?: number | null
           paid_at?: string | null
+          expires_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -244,6 +249,7 @@ export type Database = {
           platform_amount?: number | null
           system_amount?: number | null
           paid_at?: string | null
+          expires_at?: string | null
           created_at?: string
           updated_at?: string
         }

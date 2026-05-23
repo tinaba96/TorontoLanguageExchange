@@ -262,7 +262,7 @@ begin
     'booking_new',
     coalesce(v_student_name, '生徒') || ' から予約が入りました',
     coalesce(to_char(v_slot_date, 'YYYY/MM/DD') || ' ' || to_char(v_start_time, 'HH24:MI'), ''),
-    '/teacher',
+    '/students',
     jsonb_build_object('booking_id', new.id, 'slot_id', new.slot_id)
   );
   return new;
