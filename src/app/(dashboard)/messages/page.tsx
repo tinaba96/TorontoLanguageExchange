@@ -602,6 +602,10 @@ export default function MessagesPage() {
                 </div>
               </div>
 
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-900">
+                決済が完了するまで予約は確定しません。決済画面で支払いを完了してください。
+              </div>
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowConfirmModal(false)}
@@ -614,7 +618,7 @@ export default function MessagesPage() {
                   disabled={creatingBooking}
                   className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
                 >
-                  {creatingBooking ? "予約中..." : "予約を確定する"}
+                  {creatingBooking ? "処理中..." : "決済に進む"}
                 </button>
               </div>
             </div>
