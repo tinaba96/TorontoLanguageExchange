@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
-import { AlertTriangle, Check, X } from 'lucide-react'
+import { AlertTriangle, Check, X, Shield, KeyRound, Mail, Lock } from 'lucide-react'
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -45,7 +45,6 @@ export default function SettingsPage() {
 
       setProfile(profileData)
 
-      // 現在の合言葉を取得
       const { data: settingsData } = await supabase
         .from('app_settings')
         .select('value')
@@ -57,7 +56,6 @@ export default function SettingsPage() {
         setNewPassphrase(settingsData.value)
       }
 
-      // メール認証設定を取得
       const { data: emailVerificationData } = await supabase
         .from('app_settings')
         .select('value')
@@ -82,7 +80,6 @@ export default function SettingsPage() {
     setMessage(null)
 
     try {
-      // 現在のバージョンを取得
       const { data: versionData } = await supabase
         .from('app_settings')
         .select('value')
@@ -92,24 +89,16 @@ export default function SettingsPage() {
       const currentVersion = parseInt(versionData?.value || '1', 10)
       const newVersion = currentVersion + 1
 
-      // 合言葉を更新
       const { error: passphraseError } = await supabase
         .from('app_settings')
-        .update({
-          value: newPassphrase.trim(),
-          updated_at: new Date().toISOString(),
-        })
+        .update({ value: newPassphrase.trim(), updated_at: new Date().toISOString() })
         .eq('key', 'registration_passphrase')
 
       if (passphraseError) throw passphraseError
 
-      // バージョンをインクリメント
       const { error: versionError } = await supabase
         .from('app_settings')
-        .update({
-          value: newVersion.toString(),
-          updated_at: new Date().toISOString(),
-        })
+        .update({ value: newVersion.toString(), updated_at: new Date().toISOString() })
         .eq('key', 'passphrase_version')
 
       if (versionError) throw versionError
@@ -131,7 +120,6 @@ export default function SettingsPage() {
     const newValue = !emailVerificationRequired
 
     try {
-      // 設定が存在するか確認
       const { data: existingData } = await supabase
         .from('app_settings')
         .select('id')
@@ -139,24 +127,16 @@ export default function SettingsPage() {
         .single()
 
       if (existingData) {
-        // 更新
         const { error } = await supabase
           .from('app_settings')
-          .update({
-            value: newValue.toString(),
-            updated_at: new Date().toISOString(),
-          })
+          .update({ value: newValue.toString(), updated_at: new Date().toISOString() })
           .eq('key', 'email_verification_required')
 
         if (error) throw error
       } else {
-        // 新規作成
         const { error } = await supabase
           .from('app_settings')
-          .insert({
-            key: 'email_verification_required',
-            value: newValue.toString(),
-          })
+          .insert({ key: 'email_verification_required', value: newValue.toString() })
 
         if (error) throw error
       }
@@ -166,7 +146,7 @@ export default function SettingsPage() {
         type: 'success',
         text: newValue
           ? 'メール認証を有効にしました。新規ユーザーはメール認証後にログインできます。'
-          : 'メール認証を無効にしました。新規ユーザーは認証なしでログインできます。',
+          : 'メール認証を無効にしました。新規ユーザーは認証なしで即座にログインできます。',
       })
     } catch (error) {
       console.error('Error updating email verification setting:', error)
@@ -179,7 +159,10 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-xl text-gray-600">読み込み中...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-500">読み込み中...</p>
+        </div>
       </div>
     )
   }
@@ -189,47 +172,69 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* ページヘッダー */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">管理者設定</h1>
-        <p className="text-gray-600 mt-1">システム全体の設定を管理します</p>
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-3 mb-1">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #4F46E5, #6366F1)' }}
+          >
+            <Shield className="w-5 h-5 text-white" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900" style={{ fontFamily: 'var(--font-syne)' }}>
+            管理者設定
+          </h1>
+        </div>
+        <p className="text-sm text-slate-500 ml-12">システム全体の設定を管理します</p>
       </div>
 
-      {/* メッセージ表示 */}
+      {/* Status message */}
       {message && (
         <div
-          className={`mb-6 px-4 py-3 rounded-lg flex items-start gap-3 ${
+          className={`px-5 py-4 rounded-2xl flex items-start gap-3 text-sm font-medium ${
             message.type === 'success'
-              ? 'bg-green-50 border border-green-200 text-green-700'
-              : 'bg-red-50 border border-red-200 text-red-700'
+              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+              : 'bg-red-50 border border-red-200 text-red-800'
           }`}
         >
           {message.type === 'success' ? (
-            <Check className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Check className="w-3 h-3 text-white" />
+            </div>
           ) : (
-            <X className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <X className="w-3 h-3 text-white" />
+            </div>
           )}
           {message.text}
         </div>
       )}
 
-      {/* 合言葉設定 */}
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">登録用合言葉の設定</h2>
+      {/* Passphrase card */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,70,229,0.1)' }}>
+            <KeyRound className="w-4 h-4 text-indigo-600" />
+          </div>
+          <h2 className="text-base font-bold text-slate-900">登録用合言葉の設定</h2>
+        </div>
 
-        <form onSubmit={handleUpdatePassphrase} className="space-y-6">
+        <form onSubmit={handleUpdatePassphrase} className="space-y-5">
+          {/* Current passphrase display */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
               現在の合言葉
             </label>
-            <p className="text-gray-900 bg-gray-100 px-4 py-2 rounded-lg font-mono">
-              {passphrase}
-            </p>
+            <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl border border-slate-200">
+              <Lock className="w-4 h-4 text-slate-400 flex-shrink-0" />
+              <p className="text-sm text-slate-700 font-mono">{passphrase}</p>
+            </div>
           </div>
 
+          {/* New passphrase input */}
           <div>
-            <label htmlFor="newPassphrase" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="newPassphrase" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
               新しい合言葉
             </label>
             <input
@@ -238,10 +243,10 @@ export default function SettingsPage() {
               value={newPassphrase}
               onChange={(e) => setNewPassphrase(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
               placeholder="新しい合言葉を入力"
             />
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-2 text-xs text-slate-400">
               新規登録時にユーザーが入力する合言葉です
             </p>
           </div>
@@ -249,44 +254,48 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={saving || newPassphrase === passphrase}
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: 'linear-gradient(135deg, #4F46E5, #6366F1)' }}
           >
             {saving ? '更新中...' : '合言葉を更新'}
           </button>
         </form>
       </div>
 
-      {/* メール認証設定 */}
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">メール認証設定</h2>
+      {/* Email verification card */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)' }}>
+            <Mail className="w-4 h-4 text-emerald-600" />
+          </div>
+          <h2 className="text-base font-bold text-slate-900">メール認証設定</h2>
+        </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 mb-5">
           <div>
-            <p className="text-gray-900 font-medium">新規登録時のメール認証</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm font-semibold text-slate-700">新規登録時のメール認証</p>
+            <p className="text-xs text-slate-400 mt-0.5">
               {emailVerificationRequired
-                ? 'ONの場合、新規ユーザーはメールの確認リンクをクリックしてからログインできます'
-                : 'OFFの場合、新規ユーザーはメール認証なしで即座にログインできます'}
+                ? 'ON — 新規ユーザーはメールの確認リンクをクリックしてからログインできます'
+                : 'OFF — 新規ユーザーはメール認証なしで即座にログインできます'}
             </p>
           </div>
           <button
             onClick={handleToggleEmailVerification}
             disabled={savingEmailVerification}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 ${
-              emailVerificationRequired ? 'bg-indigo-600' : 'bg-gray-200'
-            }`}
+            className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+            style={{ background: emailVerificationRequired ? '#4F46E5' : '#CBD5E1' }}
           >
             <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                emailVerificationRequired ? 'translate-x-5' : 'translate-x-0'
-              }`}
+              className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+              style={{ transform: emailVerificationRequired ? 'translateX(20px)' : 'translateX(0px)' }}
             />
           </button>
         </div>
 
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-yellow-800">
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-800 leading-relaxed">
             <strong>注意:</strong> この設定はSupabaseダッシュボードの「Confirm email」設定と連携して動作します。
             Supabase側で認証メール送信が有効になっている必要があります。
           </p>

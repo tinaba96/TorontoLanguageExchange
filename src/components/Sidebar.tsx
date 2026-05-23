@@ -2,7 +2,18 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, CalendarCheck, MessageSquare, Users, User, Settings, Info } from 'lucide-react'
+import {
+  Calendar,
+  CalendarCheck,
+  MessageSquare,
+  Users,
+  User,
+  Settings,
+  Megaphone,
+  Bell,
+  Globe,
+  BookOpen,
+} from 'lucide-react'
 import type { Profile } from '@/lib/types/database.types'
 import Avatar from './Avatar'
 
@@ -12,164 +23,211 @@ interface SidebarProps {
   onClose?: () => void
 }
 
-const menuItems = [
-  { icon: Calendar, label: '全体告知!', href: '/announcements', requiresAuth: false },
-  { icon: MessageSquare, label: '掲示板', href: '/board', requiresAuth: false },
-  { icon: Users, label: '言語パートナー', href: '/students', requiresAuth: true, roleRequired: 'teacher' as const },
-  { icon: User, label: 'プロフィール', href: '/student', requiresAuth: true, roleRequired: 'student' as const },
+interface NavItem {
+  icon: any
+  label: string
+  href: string
+  requiresAuth: boolean
+  roleRequired?: 'teacher' | 'student'
+  badge?: string
+}
+
+const publicItems: NavItem[] = [
+  { icon: Megaphone, label: '全体告知', href: '/announcements', requiresAuth: false },
+  { icon: BookOpen, label: '掲示板', href: '/board', requiresAuth: false },
 ]
+
+const communityItems: NavItem[] = [
+  { icon: Users, label: '生徒を探す', href: '/students', requiresAuth: true, roleRequired: 'teacher' },
+  { icon: User, label: 'プロフィール', href: '/student', requiresAuth: true, roleRequired: 'student' },
+]
+
+const accountItems: NavItem[] = [
+  { icon: MessageSquare, label: 'メッセージ', href: '/messages', requiresAuth: true },
+  { icon: CalendarCheck, label: '予約一覧', href: '/bookings', requiresAuth: true },
+  { icon: Bell, label: '通知', href: '/notifications', requiresAuth: true },
+]
+
+function NavSection({
+  title,
+  items,
+  profile,
+  pathname,
+  onClose,
+}: {
+  title: string
+  items: NavItem[]
+  profile: Profile | null
+  pathname: string
+  onClose?: () => void
+}) {
+  const visible = items.filter((item) => {
+    if (item.requiresAuth && !profile) return false
+    if (item.roleRequired && profile?.role !== item.roleRequired) return false
+    return true
+  })
+
+  if (visible.length === 0) return null
+
+  return (
+    <div className="mb-1">
+      <p className="px-4 py-2 text-xs font-bold tracking-widest uppercase text-slate-400">{title}</p>
+      <div className="space-y-0.5">
+        {visible.map((item) => {
+          const isActive = pathname === item.href
+          const Icon = item.icon
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onClose}
+              className={`group flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl transition-all duration-150 ${
+                isActive
+                  ? 'text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+              style={isActive ? { background: 'linear-gradient(135deg, #4F46E5, #6366F1)' } : {}}
+            >
+              <Icon
+                className={`w-4 h-4 flex-shrink-0 transition-transform duration-150 group-hover:scale-110 ${
+                  isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'
+                }`}
+              />
+              <span className={`text-sm font-medium ${isActive ? 'text-white' : ''}`}>
+                {item.label}
+              </span>
+              {item.badge && (
+                <span className="ml-auto text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white">
+                  {item.badge}
+                </span>
+              )}
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 export default function Sidebar({ profile, isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname()
 
-  const getLabel = (item: typeof menuItems[0]) => {
-    if (item.label === '言語パートナー' && profile?.role === 'teacher') {
-      return '生徒を探す'
-    }
-    return item.label
-  }
+  const roleLabel = profile?.role === 'teacher' ? 'Japanese Teacher' : 'English Speaker'
 
   return (
     <>
-      {/* モバイルオーバーレイ */}
+      {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* サイドバー */}
+      {/* Sidebar panel */}
       <aside
-        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-50 transform transition-transform duration-300 ease-out flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
+        style={{
+          background: '#ffffff',
+          borderRight: '1px solid rgba(226,232,240,0.8)',
+          boxShadow: '2px 0 20px rgba(11,22,41,0.04)',
+        }}
       >
-        <div className="flex flex-col h-full">
-          {/* メニュー */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            {menuItems.map((item) => {
-              // 認証が必要な項目で未ログインの場合はスキップ
-              if (item.requiresAuth && !profile) return null
-              // 特定ロールが必要な項目でロールが一致しない場合はスキップ
-              if (item.roleRequired && profile?.role !== item.roleRequired) return null
-
-              const isActive = pathname === item.href
-              const Icon = item.icon
-
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-indigo-50 text-indigo-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{getLabel(item)}</span>
-                </Link>
-              )
-            })}
-
-            {/* 管理者設定 */}
-            {profile?.is_admin && (
-              <Link
-                href="/settings"
-                onClick={onClose}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  pathname === '/settings'
-                    ? 'bg-indigo-50 text-indigo-600'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Settings className="w-5 h-5" />
-                <span className="font-medium">管理者設定</span>
-              </Link>
-            )}
-
-            {/* メッセージ + 予約一覧（ログインユーザーのみ） */}
-            {profile && (
-              <>
-                <Link
-                  href="/messages"
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    pathname === '/messages'
-                      ? 'bg-indigo-50 text-indigo-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <MessageSquare className="w-5 h-5" />
-                  <span className="font-medium">メッセージ</span>
-                </Link>
-                <Link
-                  href="/bookings"
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    pathname === '/bookings'
-                      ? 'bg-indigo-50 text-indigo-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <CalendarCheck className="w-5 h-5" />
-                  <span className="font-medium">予約一覧</span>
-                </Link>
-              </>
-            )}
-          </nav>
-
-          {/* 区切り線 */}
-          <div className="border-t border-gray-200" />
-
-          {/* 「について」セクション */}
-          <div className="px-4 py-4">
-            <div className="flex items-center gap-2 text-gray-500 mb-2">
-              <Info className="w-4 h-4" />
-              <span className="text-sm font-medium">について</span>
+        {/* Top section: community tag */}
+        <div className="px-4 py-3 border-b border-slate-100">
+          <div className="flex items-center gap-2 px-2 py-2 rounded-xl" style={{ background: 'rgba(79,70,229,0.05)' }}>
+            <Globe className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-indigo-600 leading-none">LTOC</p>
+              <p className="text-xs text-slate-400 truncate leading-none mt-0.5">Toronto Language Community</p>
             </div>
-            <p className="text-xs text-gray-500 leading-relaxed">
-              Toronto Language Exchange は、トロントで日本語を学びたい人と教えたい人をつなぐプラットフォームです。
-            </p>
           </div>
+        </div>
 
-          {/* 区切り線 */}
-          <div className="border-t border-gray-200" />
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-3">
+          <NavSection
+            title="Community"
+            items={publicItems}
+            profile={profile}
+            pathname={pathname}
+            onClose={onClose}
+          />
 
-          {/* ユーザー情報 */}
-          <div className="px-4 py-4">
-            {profile ? (
-              <div className="flex items-center gap-3">
-                <Avatar
-                  url={profile.avatar_url}
-                  name={profile.full_name}
-                  className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {profile.full_name || '名前未設定'}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {profile.role === 'teacher' ? '先生' : '生徒'}
-                  </p>
-                </div>
+          {profile && (
+            <NavSection
+              title="Lessons"
+              items={communityItems}
+              profile={profile}
+              pathname={pathname}
+              onClose={onClose}
+            />
+          )}
+
+          {profile && (
+            <NavSection
+              title="Account"
+              items={accountItems}
+              profile={profile}
+              pathname={pathname}
+              onClose={onClose}
+            />
+          )}
+
+          {/* Admin settings */}
+          {profile?.is_admin && (
+            <div className="mb-1">
+              <p className="px-4 py-2 text-xs font-bold tracking-widest uppercase text-slate-400">Admin</p>
+              <div className="space-y-0.5">
+                <Link
+                  href="/settings"
+                  onClick={onClose}
+                  className={`group flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl transition-all duration-150 ${
+                    pathname === '/settings'
+                      ? 'text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                  style={pathname === '/settings' ? { background: 'linear-gradient(135deg, #4F46E5, #6366F1)' } : {}}
+                >
+                  <Settings className={`w-4 h-4 flex-shrink-0 ${pathname === '/settings' ? 'text-white' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium ${pathname === '/settings' ? 'text-white' : ''}`}>管理者設定</span>
+                </Link>
               </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
-                  <User className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-500">ゲストユーザー</p>
-                  <Link href="/login" className="text-xs text-indigo-600 hover:underline">
-                    ログイン
-                  </Link>
-                </div>
+            </div>
+          )}
+        </nav>
+
+        {/* Bottom: user card */}
+        <div className="border-t border-slate-100 p-3">
+          {profile ? (
+            <div className="flex items-center gap-3 px-3 py-3 rounded-xl" style={{ background: 'rgba(79,70,229,0.04)' }}>
+              <Avatar
+                url={profile.avatar_url}
+                name={profile.full_name}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden"
+                imgClassName="w-full h-full object-cover"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate leading-none">
+                  {profile.full_name || '名前未設定'}
+                </p>
+                <p className="text-xs text-slate-400 mt-1 leading-none truncate">{roleLabel}</p>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="px-3 py-3 rounded-xl" style={{ background: 'rgba(79,70,229,0.04)' }}>
+              <p className="text-xs text-slate-500 mb-2">ゲストとして閲覧中</p>
+              <Link
+                href="/login"
+                className="block text-center py-2 rounded-lg text-xs font-bold text-white transition-all"
+                style={{ background: 'linear-gradient(135deg, #4F46E5, #6366F1)' }}
+              >
+                ログイン
+              </Link>
+            </div>
+          )}
         </div>
       </aside>
     </>

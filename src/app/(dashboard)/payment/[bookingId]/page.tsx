@@ -11,7 +11,7 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, ShieldCheck, CreditCard, CheckCircle2, XCircle } from "lucide-react";
 
 type BookingDetail = {
   id: string;
@@ -55,7 +55,6 @@ export default function PaymentPage() {
     createPaymentIntent();
   }, [bookings]);
 
-  // Tick once a second so the countdown re-renders.
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -69,15 +68,9 @@ export default function PaymentPage() {
       const { data } = await supabase
         .from("bookings")
         .select(
-          `
-          id,
-          price_at_booking,
-          status,
-          created_at,
-          expires_at,
-          teacher:teacher_id(full_name),
-          slot:slot_id(slot_date, start_time, end_time)
-        `
+          `id, price_at_booking, status, created_at, expires_at,
+           teacher:teacher_id(full_name),
+           slot:slot_id(slot_date, start_time, end_time)`
         )
         .in("id", bookingIds);
 
@@ -88,17 +81,12 @@ export default function PaymentPage() {
           status: item.status,
           created_at: item.created_at,
           expires_at: (item as any).expires_at ?? null,
-          teacher: Array.isArray(item.teacher)
-            ? item.teacher[0]
-            : (item.teacher as any),
-          slot: Array.isArray(item.slot)
-            ? item.slot[0]
-            : (item.slot as any),
+          teacher: Array.isArray(item.teacher) ? item.teacher[0] : (item.teacher as any),
+          slot: Array.isArray(item.slot) ? item.slot[0] : (item.slot as any),
         }));
         formatted.sort((a, b) => {
-          const dateCompare = (a.slot?.slot_date || "").localeCompare(b.slot?.slot_date || "");
-          if (dateCompare !== 0) return dateCompare;
-          return (a.slot?.start_time || "").localeCompare(b.slot?.start_time || "");
+          const d = (a.slot?.slot_date || "").localeCompare(b.slot?.slot_date || "");
+          return d !== 0 ? d : (a.slot?.start_time || "").localeCompare(b.slot?.start_time || "");
         });
         setBookings(formatted);
       }
@@ -129,14 +117,9 @@ export default function PaymentPage() {
 
   const totalPrice = bookings.reduce((sum, b) => sum + b.price_at_booking, 0);
   const teacherName = bookings[0]?.teacher?.full_name || "名前未設定";
-  const allPaid =
-    bookings.length > 0 &&
-    bookings.every((b) => b.status === "paid" || b.status === "confirmed");
-  const allCancelled =
-    bookings.length > 0 && bookings.every((b) => b.status === "cancelled");
+  const allPaid = bookings.length > 0 && bookings.every((b) => b.status === "paid" || b.status === "confirmed");
+  const allCancelled = bookings.length > 0 && bookings.every((b) => b.status === "cancelled");
 
-  // Earliest expiry across all the bookings being paid for. We surface the
-  // remaining time so the student knows the slot lock is on a 15-min fuse.
   const earliestExpiry = bookings
     .map((b) => (b.expires_at ? new Date(b.expires_at).getTime() : null))
     .filter((t): t is number => t !== null)
@@ -156,16 +139,22 @@ export default function PaymentPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-xl text-gray-600">読み込み中...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-500">読み込み中...</p>
+        </div>
       </div>
     );
   }
 
   if (bookings.length === 0) {
     return (
-      <div className="max-w-lg mx-auto mt-12 text-center">
-        <p className="text-gray-600 text-lg mb-4">予約情報が見つかりませんでした</p>
-        <Link href="/messages" className="text-indigo-600 hover:text-indigo-800 font-medium">
+      <div className="max-w-lg mx-auto mt-16 text-center">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(79,70,229,0.08)' }}>
+          <CreditCard className="w-7 h-7 text-indigo-400" />
+        </div>
+        <p className="text-slate-600 font-medium mb-4">予約情報が見つかりませんでした</p>
+        <Link href="/messages" className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold underline underline-offset-4">
           メッセージに戻る
         </Link>
       </div>
@@ -173,40 +162,51 @@ export default function PaymentPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto mt-8">
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
-          <h1 className="text-xl font-bold">お支払い</h1>
-          <p className="text-indigo-100 text-sm mt-1">レッスン予約の決済</p>
+    <div className="max-w-lg mx-auto py-6">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
+        {/* Header */}
+        <div
+          className="relative p-6 text-white overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #0B1629 0%, #1E3A5F 60%, #4F46E5 100%)' }}
+        >
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 80% 30%, #6366F1 0%, transparent 60%)' }} />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-1">
+              <ShieldCheck className="w-5 h-5 text-indigo-300" />
+              <h1 className="text-xl font-extrabold" style={{ fontFamily: 'var(--font-syne)' }}>
+                お支払い
+              </h1>
+            </div>
+            <p className="text-white/60 text-sm">レッスン予約の安全な決済</p>
+          </div>
         </div>
 
-        <div className="p-6 space-y-4">
-          <div className="space-y-3">
-            <div className="flex justify-between py-2 border-b border-gray-100">
-              <span className="text-gray-600">先生</span>
-              <span className="font-medium text-gray-900">{teacherName}</span>
+        <div className="p-6 space-y-5">
+          {/* Booking summary */}
+          <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">先生</span>
+              <span className="text-sm font-bold text-slate-800">{teacherName}</span>
             </div>
 
-            <div className="py-2 border-b border-gray-100">
-              <span className="text-gray-600 text-sm">予約内容（{bookings.length}時間）</span>
-              <div className="mt-2 space-y-1">
+            <div className="border-t border-slate-200 pt-3">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                予約内容（{bookings.length}時間）
+              </span>
+              <div className="space-y-1.5">
                 {bookings.map((b) => (
-                  <div key={b.id} className="flex justify-between text-sm">
-                    <span className="text-gray-700">
+                  <div key={b.id} className="flex items-center justify-between">
+                    <span className="text-xs text-slate-500">
                       {b.slot
                         ? new Date(b.slot.slot_date + "T00:00:00").toLocaleDateString("ja-JP", {
-                            month: "short",
-                            day: "numeric",
-                            weekday: "short",
+                            month: "short", day: "numeric", weekday: "short",
                           })
-                        : "-"}
+                        : "–"}
                     </span>
-                    <span className="text-gray-900 font-medium">
-                      {b.slot
-                        ? `${b.slot.start_time.slice(0, 5)} - ${b.slot.end_time.slice(0, 5)}`
-                        : "-"}
+                    <span className="text-xs text-slate-600 font-medium">
+                      {b.slot ? `${b.slot.start_time.slice(0, 5)} – ${b.slot.end_time.slice(0, 5)}` : "–"}
                     </span>
-                    <span className="text-gray-600">
+                    <span className="text-xs text-slate-700 font-semibold">
                       ${(b.price_at_booking / 100).toFixed(2)}
                     </span>
                   </div>
@@ -214,58 +214,83 @@ export default function PaymentPage() {
               </div>
             </div>
 
-            <div className="flex justify-between py-2">
-              <span className="text-gray-900 font-bold">合計</span>
-              <span className="font-bold text-lg text-indigo-600">
-                ${(totalPrice / 100).toFixed(2)} CAD
+            <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
+              <span className="text-sm font-bold text-slate-700">合計</span>
+              <span className="text-xl font-extrabold" style={{ color: '#4F46E5', fontFamily: 'var(--font-syne)' }}>
+                ${(totalPrice / 100).toFixed(2)} <span className="text-sm font-bold">CAD</span>
               </span>
             </div>
           </div>
 
+          {/* Status states */}
           {allPaid ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6 text-center">
-              <p className="text-green-800 font-medium">この予約は決済済みです</p>
+            <div className="rounded-2xl p-5 text-center border" style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.2)' }}>
+              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+              <p className="text-emerald-800 font-semibold text-sm">この予約は決済済みです</p>
             </div>
           ) : allCancelled || isExpired ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-6 text-center">
-              <p className="text-red-800 font-medium">予約の保留時間が過ぎました</p>
-              <p className="text-red-700 text-sm mt-1">
+            <div className="rounded-2xl p-5 text-center border" style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)' }}>
+              <XCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+              <p className="text-red-800 font-semibold text-sm mb-1">予約の保留時間が過ぎました</p>
+              <p className="text-red-600 text-xs">
                 スロットは解放されました。メッセージページから再度ご予約ください。
               </p>
             </div>
           ) : intentError ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-6 text-center">
-              <p className="text-red-800 font-medium">{intentError}</p>
+            <div className="rounded-2xl p-5 text-center border" style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)' }}>
+              <XCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+              <p className="text-red-800 font-semibold text-sm">{intentError}</p>
             </div>
           ) : clientSecret ? (
             <>
+              {/* Countdown timer */}
               {countdownLabel && (
                 <div
-                  className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium mt-4 ${
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold border"
+                  style={
                     msRemaining !== null && msRemaining < 60_000
-                      ? "bg-red-50 text-red-700 border border-red-200"
-                      : "bg-amber-50 text-amber-700 border border-amber-200"
-                  }`}
+                      ? { background: 'rgba(239,68,68,0.08)', color: '#DC2626', borderColor: 'rgba(239,68,68,0.2)' }
+                      : { background: 'rgba(245,158,11,0.08)', color: '#D97706', borderColor: 'rgba(245,158,11,0.2)' }
+                  }
                 >
-                  <Clock className="w-4 h-4" />
-                  <span>このスロットは {countdownLabel} 以内に決済してください</span>
+                  <Clock className="w-4 h-4 flex-shrink-0" />
+                  <span>このスロットは <strong>{countdownLabel}</strong> 以内に決済してください</span>
                 </div>
               )}
+
+              {/* Stripe Elements */}
               <Elements
                 key={clientSecret}
                 stripe={stripePromise}
-                options={{ clientSecret, appearance: { theme: "stripe" } }}
+                options={{
+                  clientSecret,
+                  appearance: {
+                    theme: "stripe",
+                    variables: {
+                      colorPrimary: "#4F46E5",
+                      colorBackground: "#F8FAFC",
+                      colorText: "#0F172A",
+                      colorDanger: "#EF4444",
+                      borderRadius: "12px",
+                      fontFamily: "var(--font-dm-sans), sans-serif",
+                    },
+                  },
+                }}
               >
                 <CheckoutForm bookingIds={bookingIds} />
               </Elements>
             </>
           ) : (
-            <div className="text-center py-8 text-gray-500">決済を準備中...</div>
+            <div className="py-8 text-center">
+              <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-slate-400">決済を準備中...</p>
+            </div>
           )}
 
+          {/* Back link */}
           <Link
             href="/messages"
-            className="flex items-center justify-center gap-2 w-full mt-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-sm font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             メッセージに戻る
@@ -299,22 +324,24 @@ function CheckoutForm({ bookingIds }: { bookingIds: string[] }) {
       setErrorMsg(error.message || "決済に失敗しました");
       setSubmitting(false);
     }
-    // 成功時は Stripe が return_url にリダイレクトするため、ここに来ない
+    // On success Stripe redirects to return_url — no code runs here
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <PaymentElement />
       {errorMsg && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+        <div className="rounded-xl px-4 py-3 text-sm text-red-700 border" style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)' }}>
           {errorMsg}
         </div>
       )}
       <button
         type="submit"
         disabled={!stripe || submitting}
-        className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        style={{ background: 'linear-gradient(135deg, #4F46E5, #6366F1)' }}
       >
+        <CreditCard className="w-4 h-4" />
         {submitting ? "処理中..." : "支払う"}
       </button>
     </form>
