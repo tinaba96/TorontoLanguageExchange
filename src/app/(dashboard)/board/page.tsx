@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/database.types'
-import { Heart, MessageCircle, Clock, X, BookOpen, Plus, Send } from 'lucide-react'
+import { Heart, MessageCircle, Clock, X, BookOpen, Plus, Send, ArrowRight, Sparkles } from 'lucide-react'
 import Avatar from '@/components/Avatar'
 
 interface Post {
@@ -187,6 +188,47 @@ export default function BulletinBoardPage() {
           投稿する
         </button>
       </div>
+
+      {/* Sign-up CTA for anonymous visitors */}
+      {!profile && (
+        <div
+          className="relative overflow-hidden rounded-2xl p-5 md:p-6 mb-6 flex flex-col md:flex-row md:items-center gap-4"
+          style={{
+            background: 'linear-gradient(135deg, #0B1629 0%, #1E1B4B 100%)',
+            border: '1px solid rgba(99,102,241,0.25)',
+          }}
+        >
+          <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full opacity-20 blur-3xl pointer-events-none" style={{ background: '#FF6B6B' }} />
+          <div className="absolute -left-8 -bottom-8 w-32 h-32 rounded-full opacity-20 blur-3xl pointer-events-none" style={{ background: '#4F46E5' }} />
+
+          <div className="relative flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span className="text-xs font-bold uppercase tracking-widest text-amber-300">交流しよう</span>
+            </div>
+            <h3 className="text-white font-extrabold text-lg md:text-xl leading-tight" style={{ fontFamily: 'var(--font-syne)' }}>
+              いいねやコメントは登録メンバー限定
+            </h3>
+            <p className="text-slate-300 text-sm mt-1">無料登録で投稿・いいね・コメントが全て使えます。</p>
+          </div>
+          <div className="relative flex items-center gap-3">
+            <Link
+              href="/login"
+              className="px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:bg-white/10 border border-white/20"
+            >
+              ログイン
+            </Link>
+            <Link
+              href="/signup"
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:scale-[1.03]"
+              style={{ background: 'linear-gradient(135deg, #4F46E5, #6366F1)', boxShadow: '0 0 24px rgba(99,102,241,0.4)' }}
+            >
+              新規登録
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Posts */}
       <div className="space-y-4">

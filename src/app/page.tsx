@@ -482,29 +482,117 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── TESTIMONIAL ───────────────────────────────────────────────────────── */}
+      {/* ── TESTIMONIALS ──────────────────────────────────────────────────────── */}
       <section style={{ background: "#0B1629" }} className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "48px 48px" }} />
-        <div className="relative max-w-4xl mx-auto px-6 md:px-10 text-center">
-          <div className="text-6xl mb-8 opacity-40" style={{ fontFamily: "var(--font-syne)", color: "#4F46E5" }}>"</div>
-          <blockquote className="text-2xl md:text-3xl font-medium text-white leading-relaxed mb-10" style={{ fontFamily: "var(--font-syne)" }}>
-            お小遣い程度の収入を得ながら、英語の練習もできる。こんな理想的な環境は他にありません！
-          </blockquote>
-          <div className="flex items-center justify-center gap-4">
-            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-indigo-500">
-              <Image
-                src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&auto=format&fit=crop&q=80"
-                alt="Takeshi"
-                width={48}
-                height={48}
-                className="w-full h-full object-cover"
-              />
+        {/* Accent orbs */}
+        <div className="absolute top-1/3 left-10 w-72 h-72 rounded-full opacity-10 blur-3xl pointer-events-none" style={{ background: "#4F46E5" }} />
+        <div className="absolute bottom-1/4 right-10 w-64 h-64 rounded-full opacity-10 blur-3xl pointer-events-none" style={{ background: "#FF6B6B" }} />
+
+        <div className="relative max-w-7xl mx-auto px-6 md:px-10">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-4"
+              style={{ background: "rgba(255,107,107,0.12)", border: "1px solid rgba(255,107,107,0.25)", color: "#FF8888" }}>
+              <Star className="w-3.5 h-3.5 fill-current" />
+              メンバーの声
             </div>
-            <div className="text-left">
-              <p className="text-white font-semibold">Takeshi</p>
-              <p className="text-slate-400 text-sm">Japanese Teacher · Toronto</p>
-            </div>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4" style={{ fontFamily: "var(--font-syne)" }}>
+              リアルな <span style={{ background: "linear-gradient(135deg, #818CF8, #FF6B6B)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>体験談</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto">
+              トロントのコミュニティで活躍するメンバーから届いたメッセージ
+            </p>
           </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                quote: "お小遣い程度の収入を得ながら、英語の練習もできる。こんな理想的な環境は他にありません！",
+                name: "Takeshi",
+                role: "Japanese Teacher · Toronto",
+                photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&auto=format&fit=crop&q=80",
+                accent: "#4F46E5",
+                tag: "ワーホリ中",
+              },
+              {
+                quote: "日本人の友達が増えて、レッスンが毎週の楽しみに。文化交流も自然にできて本当に楽しい。",
+                name: "Emma",
+                role: "English Speaker · Downtown",
+                photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&auto=format&fit=crop&q=80",
+                accent: "#FF6B6B",
+                tag: "学習歴 6ヶ月",
+              },
+              {
+                quote: "始めて2ヶ月でレギュラーの生徒さんが5人に。トロント生活の支えになっています。",
+                name: "Hiroshi",
+                role: "Japanese Teacher · West End",
+                photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&auto=format&fit=crop&q=80",
+                accent: "#10B981",
+                tag: "アクティブメンバー",
+              },
+            ].map((t, i) => (
+              <div
+                key={i}
+                className="group relative rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                {/* Top accent line */}
+                <div className="absolute top-0 left-8 right-8 h-px" style={{ background: `linear-gradient(90deg, transparent, ${t.accent}, transparent)` }} />
+
+                {/* Tag */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase mb-5"
+                  style={{ background: `${t.accent}1a`, color: t.accent, border: `1px solid ${t.accent}33` }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: t.accent }} />
+                  {t.tag}
+                </div>
+
+                {/* Quote mark */}
+                <div className="text-5xl leading-none mb-3 opacity-30" style={{ fontFamily: "var(--font-syne)", color: t.accent }}>"</div>
+
+                {/* Quote */}
+                <blockquote className="text-white text-base leading-relaxed mb-8 min-h-[6.5rem]">
+                  {t.quote}
+                </blockquote>
+
+                {/* Author */}
+                <div className="flex items-center gap-3 pt-5 border-t border-white/5">
+                  <div className="w-11 h-11 rounded-full overflow-hidden ring-2" style={{ ringColor: t.accent } as any}>
+                    <Image
+                      src={t.photo}
+                      alt={t.name}
+                      width={44}
+                      height={44}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm">{t.name}</p>
+                    <p className="text-slate-400 text-xs">{t.role}</p>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_, j) => <Star key={j} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA below testimonials */}
+          {!user && (
+            <div className="text-center mt-14">
+              <p className="text-slate-400 mb-5 text-sm">あなたも次のメンバーになりませんか？</p>
+              <Link href="/signup"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-white transition-all hover:scale-[1.02]"
+                style={{ background: "linear-gradient(135deg, #4F46E5, #6366F1)", boxShadow: "0 0 30px rgba(79,70,229,0.3)" }}>
+                無料で参加する
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

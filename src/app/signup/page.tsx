@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, Eye, EyeOff, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, ChevronDown, Mail, KeyRound, Info } from 'lucide-react'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
@@ -329,7 +329,11 @@ export default function SignUpPage() {
 
             {/* Passphrase */}
             <div>
-              <label htmlFor="passphrase" className="block text-sm font-medium text-slate-300 mb-2">合言葉</label>
+              <label htmlFor="passphrase" className="flex items-center gap-1.5 text-sm font-medium text-slate-300 mb-2">
+                <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+                合言葉
+                <span className="text-xs font-normal text-slate-500">(招待制)</span>
+              </label>
               <input
                 id="passphrase"
                 type="text"
@@ -341,7 +345,25 @@ export default function SignUpPage() {
                 {...focusHandlers}
                 placeholder="運営から共有された合言葉を入力"
               />
-              <p className="mt-1.5 text-xs text-slate-500">登録には運営からの合言葉が必要です</p>
+
+              {/* Contact-the-operator notice */}
+              <div className="mt-3 rounded-xl p-3 flex items-start gap-2.5"
+                style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.18)' }}>
+                <Info className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-slate-300 leading-relaxed">
+                  <p className="font-medium mb-1">合言葉をお持ちでない方</p>
+                  <p className="text-slate-400 mb-2">
+                    LTOC は招待制コミュニティです。合言葉は運営または既存メンバーから取得してください。
+                  </p>
+                  <a
+                    href="mailto:info@ltoc.ca?subject=LTOC%E3%81%AE%E5%90%88%E8%A8%80%E8%91%89%E3%81%AE%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B&body=LTOC%E3%81%AB%E5%8F%82%E5%8A%A0%E3%81%97%E3%81%9F%E3%81%84%E3%81%AE%E3%81%A7%E3%80%81%E5%90%88%E8%A8%80%E8%91%89%E3%82%92%E6%95%99%E3%81%88%E3%81%A6%E3%81%84%E3%81%9F%E3%81%A0%E3%81%91%E3%81%BE%E3%81%99%E3%81%8B%EF%BC%9F%0A%0A%E3%81%8A%E5%90%8D%E5%89%8D%EF%BC%9A%0A%E3%83%AD%E3%83%BC%E3%83%AB%EF%BC%88%E5%85%88%E7%94%9F%2F%E7%94%9F%E5%BE%92%EF%BC%89%EF%BC%9A%0A%E8%87%AA%E5%B7%B1%E7%B4%B9%E4%BB%8B%EF%BC%9A"
+                    className="inline-flex items-center gap-1.5 text-indigo-300 hover:text-indigo-200 font-semibold transition-colors"
+                  >
+                    <Mail className="w-3 h-3" />
+                    運営に問い合わせる
+                  </a>
+                </div>
+              </div>
             </div>
 
             {/* Submit */}
