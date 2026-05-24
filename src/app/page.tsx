@@ -525,10 +525,10 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                quote: "お小遣い程度の収入を得ながら、英語の練習もできる。こんな理想的な環境は他にありません！",
-                name: "Takeshi",
-                role: "Japanese Teacher · Toronto",
-                photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&auto=format&fit=crop&q=80",
+                quote: "毎週のレッスンが楽しみすぎて、トロント生活が本当に充実してます。素敵な仲間と出会えました。",
+                name: "Yuki",
+                role: "Japanese Teacher · Annex",
+                photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&auto=format&fit=crop&q=80",
                 accent: "#4F46E5",
                 tag: "ワーホリ中",
               },
