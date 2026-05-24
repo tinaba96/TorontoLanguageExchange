@@ -335,9 +335,9 @@ export default function Home() {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(11,22,41,0.55) 0%, transparent 45%)" }} />
-                  {/* Top caption */}
-                  <div className="absolute top-6 left-6 right-6">
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(11,22,41,0.6) 0%, transparent 55%)" }} />
+                  {/* Bottom caption */}
+                  <div className="absolute bottom-6 left-6 right-6">
                     <div className="glass rounded-2xl p-4">
                       <p className="text-white text-sm font-medium leading-relaxed">
                         「英語の練習ができて、しかも収入も得られる。こんな理想的な環境は他にありません！」
