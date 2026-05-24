@@ -327,7 +327,7 @@ export default function Home() {
             {/* Right: Photo card stack */}
             <div className="relative hidden lg:block">
               <div className="relative">
-                {/* Main photo */}
+                {/* Main photo — top-anchored caption so the bottom is free for the floating card */}
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl" style={{ height: "480px" }}>
                   <Image
                     src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&auto=format&fit=crop&q=80"
@@ -335,9 +335,9 @@ export default function Home() {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(11,22,41,0.6) 0%, transparent 60%)" }} />
-                  {/* Floating caption */}
-                  <div className="absolute bottom-6 left-6 right-6">
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(11,22,41,0.55) 0%, transparent 45%)" }} />
+                  {/* Top caption */}
+                  <div className="absolute top-6 left-6 right-6">
                     <div className="glass rounded-2xl p-4">
                       <p className="text-white text-sm font-medium leading-relaxed">
                         「英語の練習ができて、しかも収入も得られる。こんな理想的な環境は他にありません！」
@@ -347,8 +347,8 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Floating secondary card — stays inside the photo bounds to avoid overlapping the section below */}
-                <div className="absolute bottom-4 -left-8 w-52 rounded-2xl overflow-hidden shadow-xl border-2" style={{ borderColor: "#0B1629", height: "140px" }}>
+                {/* Floating secondary card — bottom-right corner, contained inside the photo */}
+                <div className="absolute bottom-4 right-4 w-52 rounded-2xl overflow-hidden shadow-xl border-2" style={{ borderColor: "#0B1629", height: "140px" }}>
                   <Image
                     src="https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=400&auto=format&fit=crop&q=80"
                     alt="Coffee study"
