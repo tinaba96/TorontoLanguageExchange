@@ -348,13 +348,13 @@ export default function BulletinBoardPage() {
 
       {/* ── Post Detail Modal ── */}
       {selectedPost && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="p-6 border-b border-slate-100 flex justify-between items-start gap-3 flex-shrink-0">
-              <div>
-                <h2 className="text-xl font-extrabold text-slate-900 leading-snug" style={{ fontFamily: 'var(--font-syne)' }}>{selectedPost.title}</h2>
-                <div className="flex items-center gap-2 text-xs text-slate-400 mt-1.5">
+            <div className="p-4 sm:p-6 border-b border-slate-100 flex justify-between items-start gap-3 flex-shrink-0">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug break-words" style={{ fontFamily: 'var(--font-syne)' }}>{selectedPost.title}</h2>
+                <div className="flex items-center gap-2 text-xs text-slate-400 mt-1.5 flex-wrap">
                   <Avatar
                     url={selectedPost.author_name ? null : selectedPost.author?.avatar_url}
                     name={selectedPost.author_name || selectedPost.author?.full_name}
@@ -372,19 +372,19 @@ export default function BulletinBoardPage() {
 
             <div className="flex-1 overflow-y-auto">
               {/* Post body */}
-              <div className="p-6 border-b border-slate-50">
-                <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{selectedPost.content}</p>
+              <div className="p-4 sm:p-6 border-b border-slate-50">
+                <p className="text-slate-700 whitespace-pre-wrap leading-relaxed break-words">{selectedPost.content}</p>
               </div>
 
               {/* Comments */}
-              <div className="p-6">
-                <h3 className="font-bold text-slate-900 mb-5 flex items-center gap-2 text-sm">
+              <div className="p-4 sm:p-6">
+                <h3 className="font-bold text-slate-900 mb-4 sm:mb-5 flex items-center gap-2 text-sm">
                   <MessageCircle className="w-4 h-4 text-indigo-500" />
                   コメント ({comments.length})
                 </h3>
 
-                {/* Comment form */}
-                <form onSubmit={handleAddComment} className="mb-6 p-4 rounded-2xl border border-slate-100 bg-slate-50 space-y-2.5">
+                {/* Comment form — stacked on mobile, full-width send */}
+                <form onSubmit={handleAddComment} className="mb-5 sm:mb-6 p-3 sm:p-4 rounded-2xl border border-slate-100 bg-slate-50 space-y-2.5">
                   <input
                     type="text"
                     value={newCommentAuthor}
@@ -392,24 +392,22 @@ export default function BulletinBoardPage() {
                     placeholder="お名前"
                     className={inputClass}
                   />
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="コメントを入力..."
-                      className={`${inputClass} flex-1`}
-                    />
-                    <button
-                      type="submit"
-                      disabled={submitting || !newComment.trim() || !newCommentAuthor.trim()}
-                      className="px-4 py-2.5 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 flex-shrink-0"
-                      style={{ background: 'linear-gradient(135deg, #4F46E5, #6366F1)' }}
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      送信
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="コメントを入力..."
+                    className={inputClass}
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting || !newComment.trim() || !newCommentAuthor.trim()}
+                    className="w-full sm:w-auto sm:ml-auto sm:flex px-4 py-2.5 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    style={{ background: 'linear-gradient(135deg, #4F46E5, #6366F1)' }}
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    送信
+                  </button>
                 </form>
 
                 {/* Comments list */}
@@ -418,18 +416,18 @@ export default function BulletinBoardPage() {
                     <p className="text-center text-slate-400 text-sm py-4">まだコメントがありません</p>
                   ) : (
                     comments.map((comment) => (
-                      <div key={comment.id} className="flex gap-3">
+                      <div key={comment.id} className="flex gap-2 sm:gap-3">
                         <Avatar
                           url={comment.author_name ? null : comment.author?.avatar_url}
                           name={comment.author_name || comment.author?.full_name}
                           className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm flex-shrink-0"
                         />
-                        <div className="flex-1 bg-slate-50 rounded-2xl rounded-tl-sm px-4 py-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="text-sm font-semibold text-slate-800">{comment.author_name || comment.author?.full_name || '名前未設定'}</p>
-                            <p className="text-xs text-slate-400">{formatDate(comment.created_at)}</p>
+                        <div className="flex-1 min-w-0 bg-slate-50 rounded-2xl rounded-tl-sm px-3 sm:px-4 py-2.5 sm:py-3">
+                          <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{comment.author_name || comment.author?.full_name || '名前未設定'}</p>
+                            <p className="text-[10px] sm:text-xs text-slate-400 flex-shrink-0">{formatDate(comment.created_at)}</p>
                           </div>
-                          <p className="text-sm text-slate-600 leading-relaxed">{comment.content}</p>
+                          <p className="text-sm text-slate-600 leading-relaxed break-words whitespace-pre-wrap">{comment.content}</p>
                         </div>
                       </div>
                     ))
