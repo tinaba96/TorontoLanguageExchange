@@ -28,7 +28,7 @@ function useCounter(target: number, duration = 2000, start = false) {
 }
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
-function StatCard({ value, suffix, label, delay }: { value: number; suffix: string; label: string; delay: string }) {
+function StatCard({ value, suffix, label, delay, href }: { value: number; suffix: string; label: string; delay: string; href?: string }) {
   const [visible, setVisible] = useState(false);
   const count = useCounter(value, 1800, visible);
 
@@ -37,13 +37,10 @@ function StatCard({ value, suffix, label, delay }: { value: number; suffix: stri
     return () => clearTimeout(timer);
   }, []);
 
-  return (
-    <div
-      className="text-center animate-fade-up"
-      style={{ animationDelay: delay, animationFillMode: "both" }}
-    >
+  const inner = (
+    <>
       <div
-        className="text-5xl md:text-6xl font-bold mb-2"
+        className="text-5xl md:text-6xl font-bold mb-2 transition-transform duration-300 group-hover:scale-105"
         style={{ fontFamily: "var(--font-syne)", color: "#FF6B6B" }}
       >
         {count}{suffix}
@@ -51,14 +48,37 @@ function StatCard({ value, suffix, label, delay }: { value: number; suffix: stri
       <div className="text-sm md:text-base text-slate-300 font-medium tracking-wide uppercase">
         {label}
       </div>
+      {href && (
+        <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity">
+          参加する <ArrowRight className="w-3 h-3" />
+        </div>
+      )}
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="group block text-center animate-fade-up cursor-pointer"
+        style={{ animationDelay: delay, animationFillMode: "both" }}
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <div className="text-center animate-fade-up" style={{ animationDelay: delay, animationFillMode: "both" }}>
+      {inner}
     </div>
   );
 }
 
 // ── Step card ─────────────────────────────────────────────────────────────────
-function StepCard({ num, title, desc, icon: Icon }: { num: string; title: string; desc: string; icon: any }) {
-  return (
-    <div className="group relative bg-white rounded-2xl p-8 border border-slate-100 hover-lift shadow-sm hover:shadow-xl transition-all duration-300">
+function StepCard({ num, title, desc, icon: Icon, href }: { num: string; title: string; desc: string; icon: any; href?: string }) {
+  const className = "group relative bg-white rounded-2xl p-8 border border-slate-100 hover-lift shadow-sm hover:shadow-xl transition-all duration-300 block";
+  const inner = (
+    <>
       <div className="absolute -top-4 -left-4 w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-lg" style={{ fontFamily: "var(--font-syne)" }}>
         {num}
       </div>
@@ -67,8 +87,18 @@ function StepCard({ num, title, desc, icon: Icon }: { num: string; title: string
       </div>
       <h3 className="text-xl font-bold text-slate-900 mb-3" style={{ fontFamily: "var(--font-syne)" }}>{title}</h3>
       <p className="text-slate-500 leading-relaxed text-sm">{desc}</p>
-    </div>
+      {href && (
+        <div className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
+          始める <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+        </div>
+      )}
+    </>
   );
+
+  if (href) {
+    return (<Link href={href} className={className}>{inner}</Link>);
+  }
+  return (<div className={className}>{inner}</div>);
 }
 
 export default function Home() {
@@ -352,9 +382,9 @@ export default function Home() {
       <section style={{ background: "#0B1629" }} className="py-20 border-t border-white/5">
         <div className="max-w-5xl mx-auto px-6 md:px-10">
           <div className="grid grid-cols-3 gap-8 md:gap-16">
-            <StatCard value={200} suffix="+" label="アクティブメンバー" delay="0ms" />
-            <StatCard value={150} suffix="+" label="言語交換セッション" delay="100ms" />
-            <StatCard value={50} suffix="+" label="毎月のイベント" delay="200ms" />
+            <StatCard value={200} suffix="+" label="アクティブメンバー" delay="0ms" href={user ? undefined : "/signup"} />
+            <StatCard value={150} suffix="+" label="言語交換セッション" delay="100ms" href={user ? undefined : "/signup"} />
+            <StatCard value={50} suffix="+" label="毎月のイベント" delay="200ms" href={user ? undefined : "/signup"} />
           </div>
         </div>
       </section>
@@ -382,18 +412,21 @@ export default function Home() {
               icon={Users}
               title="プロフィール登録"
               desc="合言葉を取得してコミュニティに参加。自己紹介とスケジュールを設定しましょう。"
+              href={user ? undefined : "/signup"}
             />
             <StepCard
               num="02"
               icon={MessageSquare}
               title="マッチング＆メッセージ"
               desc="パートナーとマッチングしてチャット。お互いのスケジュールを確認して予約を入れましょう。"
+              href={user ? undefined : "/signup"}
             />
             <StepCard
               num="03"
               icon={Calendar}
               title="レッスン開始"
               desc="カフェやオンラインで言語交換セッション。英語と日本語を教え合いながら友達の輪を広げよう。"
+              href={user ? undefined : "/signup"}
             />
           </div>
         </div>
@@ -530,55 +563,74 @@ export default function Home() {
                 accent: "#10B981",
                 tag: "アクティブメンバー",
               },
-            ].map((t, i) => (
-              <div
-                key={i}
-                className="group relative rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1"
-                style={{
-                  background: "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  backdropFilter: "blur(10px)",
-                }}
-              >
-                {/* Top accent line */}
-                <div className="absolute top-0 left-8 right-8 h-px" style={{ background: `linear-gradient(90deg, transparent, ${t.accent}, transparent)` }} />
+            ].map((t, i) => {
+              const cardClass = "group relative rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1 block";
+              const cardStyle = {
+                background: "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                backdropFilter: "blur(10px)",
+              } as any;
+              const cardInner = (
+                <>
+                  {/* Top accent line */}
+                  <div className="absolute top-0 left-8 right-8 h-px" style={{ background: `linear-gradient(90deg, transparent, ${t.accent}, transparent)` }} />
 
-                {/* Tag */}
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase mb-5"
-                  style={{ background: `${t.accent}1a`, color: t.accent, border: `1px solid ${t.accent}33` }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: t.accent }} />
-                  {t.tag}
+                  {/* Tag */}
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase mb-5"
+                    style={{ background: `${t.accent}1a`, color: t.accent, border: `1px solid ${t.accent}33` }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: t.accent }} />
+                    {t.tag}
+                  </div>
+
+                  {/* Quote mark */}
+                  <div className="text-5xl leading-none mb-3 opacity-30" style={{ fontFamily: "var(--font-syne)", color: t.accent }}>"</div>
+
+                  {/* Quote */}
+                  <blockquote className="text-white text-base leading-relaxed mb-8 min-h-[6.5rem]">
+                    {t.quote}
+                  </blockquote>
+
+                  {/* Author */}
+                  <div className="flex items-center gap-3 pt-5 border-t border-white/5">
+                    <div className="w-11 h-11 rounded-full overflow-hidden ring-2" style={{ ringColor: t.accent } as any}>
+                      <Image
+                        src={t.photo}
+                        alt={t.name}
+                        width={44}
+                        height={44}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold text-sm">{t.name}</p>
+                      <p className="text-slate-400 text-xs">{t.role}</p>
+                    </div>
+                    <div className="flex gap-0.5">
+                      {[...Array(5)].map((_, j) => <Star key={j} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
+                    </div>
+                  </div>
+
+                  {!user && (
+                    <div className="mt-6 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                      仲間になる <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  )}
+                </>
+              );
+
+              if (!user) {
+                return (
+                  <Link key={i} href="/signup" className={cardClass} style={cardStyle}>
+                    {cardInner}
+                  </Link>
+                );
+              }
+              return (
+                <div key={i} className={cardClass} style={cardStyle}>
+                  {cardInner}
                 </div>
-
-                {/* Quote mark */}
-                <div className="text-5xl leading-none mb-3 opacity-30" style={{ fontFamily: "var(--font-syne)", color: t.accent }}>"</div>
-
-                {/* Quote */}
-                <blockquote className="text-white text-base leading-relaxed mb-8 min-h-[6.5rem]">
-                  {t.quote}
-                </blockquote>
-
-                {/* Author */}
-                <div className="flex items-center gap-3 pt-5 border-t border-white/5">
-                  <div className="w-11 h-11 rounded-full overflow-hidden ring-2" style={{ ringColor: t.accent } as any}>
-                    <Image
-                      src={t.photo}
-                      alt={t.name}
-                      width={44}
-                      height={44}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-sm">{t.name}</p>
-                    <p className="text-slate-400 text-xs">{t.role}</p>
-                  </div>
-                  <div className="flex gap-0.5">
-                    {[...Array(5)].map((_, j) => <Star key={j} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* CTA below testimonials */}
