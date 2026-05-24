@@ -347,21 +347,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Floating secondary card — bottom-right corner, contained inside the photo */}
-                <div className="absolute bottom-4 right-4 w-52 rounded-2xl overflow-hidden shadow-xl border-2" style={{ borderColor: "#0B1629", height: "140px" }}>
-                  <Image
-                    src="https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=400&auto=format&fit=crop&q=80"
-                    alt="Coffee study"
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(11,22,41,0.85) 0%, rgba(11,22,41,0.4) 50%, transparent 100%)" }} />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <p className="text-white text-xs font-bold drop-shadow">毎月のイベント</p>
-                    <p className="text-slate-200 text-xs drop-shadow">50+ 開催中</p>
-                  </div>
-                </div>
-
                 {/* Floating badge */}
                 <div className="absolute -top-4 -right-4 glass-dark rounded-2xl px-4 py-3 flex items-center gap-2 shadow-xl">
                   <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
