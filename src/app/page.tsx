@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types/database.types";
 import Avatar from "@/components/Avatar";
-import { ArrowRight, Users, Calendar, MessageSquare, Star, Globe, ChevronDown } from "lucide-react";
+import { ArrowRight, Users, Calendar, MessageSquare, Star, Globe, ChevronDown, Mail } from "lucide-react";
 
 // ── Animated counter hook ─────────────────────────────────────────────────────
 function useCounter(target: number, duration = 2000, start = false) {
@@ -139,7 +139,7 @@ export default function Home() {
               LTOC
             </span>
             <div className="hidden sm:block h-5 w-px bg-slate-600 mx-1" />
-            <span className="hidden sm:block text-xs text-slate-400 font-medium tracking-widest uppercase">Toronto Language Community</span>
+            <span className="hidden sm:block text-xs text-slate-400 font-medium tracking-widest uppercase">Language & Toronto Community</span>
           </div>
         </Link>
 
@@ -213,7 +213,7 @@ export default function Home() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-8 animate-fade-up"
                 style={{ background: "rgba(99, 102, 241, 0.15)", border: "1px solid rgba(99, 102, 241, 0.3)", color: "#818CF8", animationFillMode: "both" }}>
                 <Globe className="w-3.5 h-3.5" />
-                Toronto Language Community
+                Language & Toronto Community
               </div>
 
               {/* Headline */}
@@ -668,13 +668,20 @@ export default function Home() {
               <span className="text-xl font-extrabold" style={{ fontFamily: "var(--font-syne)", background: "linear-gradient(135deg, #818CF8, #6366F1)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 LTOC
               </span>
-              <span className="text-slate-500 text-sm">Toronto Language Community</span>
+              <span className="text-slate-500 text-sm">Language & Toronto Community</span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-slate-500">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-500">
               <Link href="/announcements" className="hover:text-white transition-colors">イベント</Link>
               <Link href="/board" className="hover:text-white transition-colors">掲示板</Link>
               <Link href="/login" className="hover:text-white transition-colors">ログイン</Link>
               <Link href="/signup" className="hover:text-white transition-colors">新規登録</Link>
+              <a
+                href="mailto:info@ltoc.ca"
+                className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                info@ltoc.ca
+              </a>
             </div>
             <p className="text-slate-600 text-xs">© 2025 LTOC. All rights reserved.</p>
           </div>

@@ -24,7 +24,7 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "LTOC — Toronto Language Community",
+  title: "LTOC — Language & Toronto Community",
   description: "トロントで言語交換、新しい出会いを。日本語を教えたい日本人と、日本語を学びたい英語話者をつなぐプラットフォーム。",
 };
 

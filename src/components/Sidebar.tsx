@@ -141,7 +141,7 @@ export default function Sidebar({ profile, isOpen = true, onClose }: SidebarProp
             <Globe className="w-4 h-4 text-indigo-500 flex-shrink-0" />
             <div className="min-w-0">
               <p className="text-xs font-bold text-indigo-600 leading-none">LTOC</p>
-              <p className="text-xs text-slate-400 truncate leading-none mt-0.5">Toronto Language Community</p>
+              <p className="text-xs text-slate-400 truncate leading-none mt-0.5">Language & Toronto Community</p>
             </div>
           </div>
         </div>

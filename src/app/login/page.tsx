@@ -84,7 +84,7 @@ export default function LoginPage() {
                 LTOC
               </span>
             </Link>
-            <p className="text-slate-500 text-xs mt-1 tracking-widest uppercase">Toronto Language Community</p>
+            <p className="text-slate-500 text-xs mt-1 tracking-widest uppercase">Language & Toronto Community</p>
           </div>
 
           {/* Heading */}

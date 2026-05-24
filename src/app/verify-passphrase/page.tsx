@@ -188,7 +188,7 @@ export default function VerifyPassphrasePage() {
         {/* LTOC branding below card */}
         <p className="text-center mt-6 text-slate-600 text-xs">
           <span style={{ fontFamily: 'var(--font-syne)', color: '#6366F1', fontWeight: 700 }}>LTOC</span>
-          {' '}Toronto Language Community
+          {' '}Language & Toronto Community
         </p>
       </div>
     </div>
