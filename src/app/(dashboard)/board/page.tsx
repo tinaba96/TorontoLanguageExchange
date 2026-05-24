@@ -247,7 +247,8 @@ export default function BulletinBoardPage() {
             return (
               <div
                 key={post.id}
-                className="group bg-white rounded-2xl border border-slate-100 overflow-hidden transition-all duration-200 hover:shadow-xl hover:border-slate-200 hover:-translate-y-0.5"
+                onClick={() => setSelectedPost(post)}
+                className="group bg-white rounded-2xl border border-slate-100 overflow-hidden transition-all duration-200 hover:shadow-xl hover:border-slate-200 hover:-translate-y-0.5 cursor-pointer"
               >
                 <div className="flex flex-col md:flex-row">
                   {/* Color accent panel */}
@@ -281,7 +282,10 @@ export default function BulletinBoardPage() {
 
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => handleLikeToggle(post)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleLikeToggle(post)
+                        }}
                         className={`group/like flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all ${
                           post.user_has_liked
                             ? 'bg-red-50 text-red-500'
@@ -292,7 +296,10 @@ export default function BulletinBoardPage() {
                         <span>{post.likes_count}</span>
                       </button>
                       <button
-                        onClick={() => setSelectedPost(post)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedPost(post)
+                        }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-500 transition-all"
                       >
                         <MessageCircle className="w-4 h-4" />
