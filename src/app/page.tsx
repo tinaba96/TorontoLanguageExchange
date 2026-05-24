@@ -347,18 +347,18 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Floating secondary card */}
-                <div className="absolute -bottom-8 -left-8 w-52 rounded-2xl overflow-hidden shadow-xl border-2" style={{ borderColor: "#0B1629", height: "140px" }}>
+                {/* Floating secondary card — stays inside the photo bounds to avoid overlapping the section below */}
+                <div className="absolute bottom-4 -left-8 w-52 rounded-2xl overflow-hidden shadow-xl border-2" style={{ borderColor: "#0B1629", height: "140px" }}>
                   <Image
                     src="https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=400&auto=format&fit=crop&q=80"
                     alt="Coffee study"
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(11,22,41,0.7) 0%, transparent 50%)" }} />
-                  <div className="absolute bottom-3 left-3">
-                    <p className="text-white text-xs font-semibold">毎月のイベント</p>
-                    <p className="text-slate-300 text-xs">50+ 開催中</p>
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(11,22,41,0.85) 0%, rgba(11,22,41,0.4) 50%, transparent 100%)" }} />
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <p className="text-white text-xs font-bold drop-shadow">毎月のイベント</p>
+                    <p className="text-slate-200 text-xs drop-shadow">50+ 開催中</p>
                   </div>
                 </div>
 
